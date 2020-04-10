@@ -61,7 +61,82 @@ import (
 //////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs
 func (i *KvService) connect() error {
-	return fmt.Errorf("[ERROR] KV listen not implemented")
+	// nodeID := flag.Int("nodeid", 1, "NodeID to use")
+	// addr := flag.String("addr", "", "Nodehost address")
+	// join := flag.Bool("join", false, "Joining a new node")
+	// flag.Parse()
+	// if len(*addr) == 0 && *nodeID != 1 && *nodeID != 2 && *nodeID != 3 {
+	// 	fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
+	// 	os.Exit(1)
+	// }
+	// // https://github.com/golang/go/issues/17393
+	// if runtime.GOOS == "darwin" {
+	// 	signal.Ignore(syscall.Signal(0xd))
+	// }
+	// initialMembers := make(map[uint64]string)
+	// if !*join {
+	// 	for idx, v := range addresses {
+	// 		initialMembers[uint64(idx+1)] = v
+	// 	}
+	// }
+	// var nodeAddr string
+	// if len(*addr) != 0 {
+	// 	nodeAddr = *addr
+	// } else {
+	// 	nodeAddr = initialMembers[uint64(*nodeID)]
+	// }
+	// fmt.Fprintf(os.Stdout, "node address: %s\n", nodeAddr)
+	// logger.GetLogger("raft").SetLevel(logger.ERROR)
+	// logger.GetLogger("rsm").SetLevel(logger.WARNING)
+	// logger.GetLogger("transport").SetLevel(logger.WARNING)
+	// logger.GetLogger("grpc").SetLevel(logger.WARNING)
+	// rc := config.Config{
+	// 	NodeID:             uint64(*nodeID),
+	// 	ClusterID:          exampleClusterID,
+	// 	ElectionRTT:        10,
+	// 	HeartbeatRTT:       1,
+	// 	CheckQuorum:        true,
+	// 	SnapshotEntries:    10,
+	// 	CompactionOverhead: 5,
+	// }
+	// datadir := filepath.Join(
+	// 	"example-data",
+	// 	"helloworld-data",
+	// 	fmt.Sprintf("node%d", *nodeID))
+	// nhc := config.NodeHostConfig{
+	// 	WALDir:         datadir,
+	// 	NodeHostDir:    datadir,
+	// 	RTTMillisecond: 200,
+	// 	RaftAddress:    nodeAddr,
+	// }
+	// nh, err := dragonboat.NewNodeHost(nhc)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// if err := nh.StartOnDiskCluster(initialMembers, *join, NewDiskKV, rc); err != nil {
+	// 	fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// raftStopper := syncutil.NewStopper()
+	// consoleStopper := syncutil.NewStopper()
+	// ch := make(chan string, 16)
+	// consoleStopper.RunWorker(func() {
+	// 	reader := bufio.NewReader(os.Stdin)
+	// 	for {
+	// 		s, err := reader.ReadString('\n')
+	// 		if err != nil {
+	// 			close(ch)
+	// 			return
+	// 		}
+	// 		if s == "exit\n" {
+	// 			raftStopper.Stop()
+	// 			nh.Stop()
+	// 			return
+	// 		}
+	// 		ch <- s
+	// 	}
+	// })
+	return nil
 }
 
 //////////////////////////////////////// C*
@@ -111,7 +186,7 @@ func (i *KvService) write(w *WriteArgs) error {
 	err := fmt.Errorf("Could not write to any kv server in cluster")
 	//v := *w.Values
 	switch w.WriteType {
-	case WRITE_JS:
+	case WRITE_PUT_KV:
 		//v["data"]?
 		return err
 	default:

@@ -11,11 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/json"
@@ -37,28 +37,12 @@ import (
 	sm "github.com/lni/dragonboat/v3/statemachine"
 )
 
-// ErrCacheMiss is returned when a certificate is not found in cache.
-var ErrCacheMiss = errors.New("acme/autocert: certificate cache miss")
-
-// KvCache implements Cache using distributed rocksdb key-value store.
-type KvCache struct {
-}
-
-// Get reads a certificate data from the specified file name.
-func (d KvCache) Get(ctx context.Context, name string) ([]byte, error) {
-	return nil, nil
-}
-
-// Put writes the certificate data to the specified file name.
-// The file will be created with 0600 permissions.
-func (d KvCache) Put(ctx context.Context, name string, data []byte) error {
-	return nil
-}
-
-// Delete removes the specified file name.
-func (d KvCache) Delete(ctx context.Context, name string) error {
-	return nil
-}
+const (
+	appliedIndexKey    string = "disk_kv_applied_index"
+	testDBDirName      string = "example-data"
+	currentDBFilename  string = "current"
+	updatingDBFilename string = "current.updating"
+)
 
 func syncDir(dir string) (err error) {
 	if runtime.GOOS == "windows" {
@@ -98,6 +82,40 @@ type rocksdb struct {
 	wo     *gorocksdb.WriteOptions
 	opts   *gorocksdb.Options
 	closed bool
+}
+
+func (r *rocksdb) scan(query string) (map[string][]byte, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.closed {
+		return nil, errors.New("db already closed")
+	}
+
+	items := make(map[string][]byte)
+	ro := gorocksdb.NewDefaultReadOptions()
+	ro.SetFillCache(false)
+	it := r.db.NewIterator(ro)
+	defer it.Close()
+	qb := []byte(query)
+	it.Seek(qb)
+	for it = it; it.Valid(); it.Next() {
+		key := it.Key()
+		val := it.Value()
+		k := key.Data()
+		if !bytes.HasPrefix(k, qb) {
+			key.Free()
+			val.Free()
+			break
+		}
+		data := val.Data()
+		v := make([]byte, len(data))
+		copy(v, data)
+		items[string(k)] = v
+		key.Free()
+		val.Free()
+	}
+
+	return items, nil
 }
 
 func (r *rocksdb) lookup(query []byte) ([]byte, error) {
@@ -368,6 +386,19 @@ func (d *DiskKV) Lookup(key interface{}) (interface{}, error) {
 		v, err := db.lookup(key.([]byte))
 		if err == nil && d.closed {
 			panic("lookup returned valid result when DiskKV is already closed")
+		}
+		return v, err
+	}
+	return nil, errors.New("db closed")
+}
+
+// Gets all records prefixed with key
+func (d *DiskKV) Scan(key string) (map[string][]byte, error) {
+	db := (*rocksdb)(atomic.LoadPointer(&d.db))
+	if db != nil {
+		v, err := db.scan(key)
+		if err == nil && d.closed {
+			panic("scan returned valid result when DiskKV is already closed")
 		}
 		return v, err
 	}

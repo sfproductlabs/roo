@@ -98,7 +98,6 @@ func main() {
 	}
 
 	//////////////////////////////////////// SETUP CONFIG VARIABLES
-	fmt.Println("Trusted domains: ", configuration.Domains)
 	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
 
 	//////////////////////////////////////// LOAD NOTIFIERS (OUTBOUND TRAFFIC)
@@ -274,6 +273,46 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	}).Methods("GET")
+	//////////////////////////////////////// GET KV
+	rtr.HandleFunc("/roo/kv/"+apiVersion+"/{key: .*}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_GET_KV,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("GET")
+	//////////////////////////////////////// PUT KV
+	rtr.HandleFunc("/roo/kv/"+apiVersion+"/{key: .*}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: WRITE_PUT_KV,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("PUT")
 	http.Handle("/roo", rtr)
 
 	go func() {

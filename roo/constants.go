@@ -16,16 +16,11 @@ const (
 	//CONSUME
 	SERVE_GET_PING      = 1 << iota
 	SERVE_GET_PING_DESC = "getPing"
+	SERVE_GET_KV        = 1 << iota
+	SERVE_GET_KV_DESC   = "getKV"
 )
 const (
 	//NOTIFY ONLY
-	WRITE_JS      = 1 << iota
-	WRITE_JS_DESC = "putJS"
-)
-
-const (
-	appliedIndexKey    string = "disk_kv_applied_index"
-	testDBDirName      string = "example-data"
-	currentDBFilename  string = "current"
-	updatingDBFilename string = "current.updating"
+	WRITE_PUT_KV      = 1 << iota
+	WRITE_PUT_KV_DESC = "putKV"
 )

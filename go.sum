@@ -15,11 +15,14 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/ghemawat/stream v0.0.0-20171120220530-696b145b53b9/go.mod h1:106OIgooyS7OzLDOpUGgm9fA3bQENb/cFSyyBmMoJDs=
 github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5 h1:LbX3qY8XXiD8kUJLvEsm3Hm2tjG3gQxThdmv9tW3cyI=
 github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5/go.mod h1:DL0ekTmBSTdlNF25Orwt/JMzqIq3EJ4MVa/J/uK64OY=
+github.com/gocql/gocql v0.0.0-20200410100145-b454769479c6 h1:esX8kOWgz5dyrcn/QQQgMmPqPWzX/hNO65/nmfcEOYw=
+github.com/gocql/gocql v0.0.0-20200410100145-b454769479c6/go.mod h1:DL0ekTmBSTdlNF25Orwt/JMzqIq3EJ4MVa/J/uK64OY=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
 github.com/golang/mock v1.1.1/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfbm0A=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/golang/protobuf v1.3.3 h1:gyjaxf+svBWX08ZjK86iN9geUJF0H6gp2IRKX6Nf6/I=
 github.com/golang/protobuf v1.3.3/go.mod h1:vzj43D7+SQXF/4pzW/hwtAqwc6iTitCiVSaWz5lYuqw=
 github.com/golang/snappy v0.0.0-20170215233205-553a64147049/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
@@ -47,6 +50,7 @@ github.com/lni/dragonboat/v3 v3.2.0/go.mod h1:GuPAs/bgs2IWrdb1/b5sYdsdY8aZl8p0lQ
 github.com/lni/goutils v1.0.1 h1:b0RTWAg84viMYUy9zJZGATzyXZlCLra3HqMgzydCx8I=
 github.com/lni/goutils v1.0.1/go.mod h1:f2YgTtVeGFUdJrZJmtf0S05qYvSZXdmBxa5Z8nhBU/Q=
 github.com/lni/goutils v1.0.2 h1:XEQvY9GWR/4cUA35l55tIroD9gA2wlByOAu3thdnThA=
+github.com/lni/goutils v1.1.0 h1:dnLcvFyaJ3Wt1YkcFUOd2Vxq+E+ioGW1HVJtDLseC4U=
 github.com/lni/goutils v1.1.0/go.mod h1:NDD+zR5cMNH2OsJj+r/X7zBSzBlmxytUUot268gtOOw=
 github.com/nats-io/nats.go v1.8.1 h1:6lF/f1/NN6kzUDBz6pyvQDEXO39jqXcWRLu/tKjtOUQ=
 github.com/nats-io/nats.go v1.8.1/go.mod h1:BrFz9vVn0fU3AcH9Vn4Kd7W0NpJ651tD5omQ3M8LwxM=
