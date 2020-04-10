@@ -294,7 +294,7 @@ func main() {
 		}
 	}).Methods("GET")
 	//////////////////////////////////////// PUT KV
-	rtr.HandleFunc("/roo/kv/"+apiVersion+"/{key: .*}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/kv/"+apiVersion+"/{key: .*}/{value: .*}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
