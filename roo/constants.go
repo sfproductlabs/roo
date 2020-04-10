@@ -13,10 +13,14 @@ const (
 
 //Service calls
 const (
+	//CONSUME
 	SERVE_GET_PING      = 1 << iota
 	SERVE_GET_PING_DESC = "getPing"
-	WRITE_JS            = 1 << iota
-	WRITE_JS_DESC       = "putJS"
+)
+const (
+	//NOTIFY ONLY
+	WRITE_JS      = 1 << iota
+	WRITE_JS_DESC = "putJS"
 )
 
 const (

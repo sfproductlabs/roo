@@ -101,7 +101,7 @@ func main() {
 	fmt.Println("Trusted domains: ", configuration.Domains)
 	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
 
-	//////////////////////////////////////// LOAD NOTIFIERS
+	//////////////////////////////////////// LOAD NOTIFIERS (OUTBOUND TRAFFIC)
 	for idx := range configuration.Notify {
 		s := &configuration.Notify[idx]
 		switch s.Service {
@@ -128,7 +128,7 @@ func main() {
 		}
 	}
 
-	//////////////////////////////////////// LOAD CONSUMERS
+	//////////////////////////////////////// LOAD CONSUMERS (INBOUND TRAFFIC)
 	for idx := range configuration.Consume {
 		s := &configuration.Consume[idx]
 		switch s.Service {
@@ -157,6 +157,10 @@ func main() {
 
 	}
 
+	/////////////////////////////////////////
+	//**************************************
+	// THE APP BEGINS HERE IN ERNEST
+	//**************************************
 	//////////////////////////////////////// SSL CERT MANAGER
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
@@ -193,6 +197,8 @@ func main() {
 	}
 
 	//////////////////////////////////////// PROXY API ROUTES
+	// TODO:
+	sharedBuffer := newBufferPool()
 	if configuration.ProxyUrl != "" {
 		fmt.Println("Proxying to:", configuration.ProxyUrl)
 		origin, _ := url.Parse(configuration.ProxyUrl)
@@ -205,8 +211,8 @@ func main() {
 			req.URL.Scheme = "http"
 			req.URL.Host = origin.Host
 		}
-		proxy := &httputil.ReverseProxy{Director: director}
-		http.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		proxy := &httputil.ReverseProxy{Director: director, BufferPool: sharedBuffer}
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if !configuration.IgnoreProxyOptions && r.Method == http.MethodOptions {
 				//Lets just allow requests to this endpoint
 				w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
@@ -238,8 +244,8 @@ func main() {
 		})
 	}
 
-	//////////////////////////////////////// STATUS TEST ROUTE
 	rtr := mux.NewRouter()
+	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
 	rtr.HandleFunc("/roo/"+apiVersion, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		w.Header().Set("access-control-allow-credentials", "true")
@@ -248,6 +254,7 @@ func main() {
 		w.Header().Set("access-control-max-age", "1728000")
 		w.WriteHeader(http.StatusOK)
 	}).Methods("OPTIONS")
+	//////////////////////////////////////// PING
 	rtr.HandleFunc("/roo/"+apiVersion+"/ping{pong: .*}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
