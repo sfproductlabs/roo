@@ -13,7 +13,7 @@
     "AllowOrigin": "*",
     "DefaultRedirect": "https://sfpl.io",
     "Debug" : true,
-    "Consume": [
+    "X_Consume": [
         {
             "Service": "nats",
             "Hosts": [
@@ -46,7 +46,7 @@
             ]
         }
     ],
-    "Notify": [ 
+    "X_Notify": [ 
         {
             "Service": "nats",
             "Hosts": [
