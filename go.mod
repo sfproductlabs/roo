@@ -1,7 +1,6 @@
 module github.com/sfproductlabs/roo/v3
 
 require (
-	github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5
 	github.com/gorilla/mux v1.7.4
 	github.com/lni/dragonboat v2.1.7+incompatible
 	github.com/lni/dragonboat-example/v3 v3.0.0-20200311063208-bedbb3f76d56
