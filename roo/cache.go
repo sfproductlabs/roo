@@ -40,8 +40,7 @@ import (
 // ErrCacheMiss is returned when a certificate is not found in cache.
 var ErrCacheMiss = errors.New("acme/autocert: certificate cache miss")
 
-// KvCache implements Cache using a directory on the local filesystem.
-// If the directory does not exist, it will be created with 0700 permissions.
+// KvCache implements Cache using distributed rocksdb key-value store.
 type KvCache struct {
 }
 
