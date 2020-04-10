@@ -18,3 +18,10 @@ const (
 	WRITE_JS            = 1 << iota
 	WRITE_JS_DESC       = "putJS"
 )
+
+const (
+	appliedIndexKey    string = "disk_kv_applied_index"
+	testDBDirName      string = "example-data"
+	currentDBFilename  string = "current"
+	updatingDBFilename string = "current.updating"
+)

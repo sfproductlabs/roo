@@ -60,13 +60,6 @@ func (d KvCache) Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-const (
-	appliedIndexKey    string = "disk_kv_applied_index"
-	testDBDirName      string = "example-data"
-	currentDBFilename  string = "current"
-	updatingDBFilename string = "current.updating"
-)
-
 func syncDir(dir string) (err error) {
 	if runtime.GOOS == "windows" {
 		return nil
