@@ -1,0 +1,63 @@
+{
+    "ApiVersion": 1,
+    "StaticDirectory": "public",
+    "IgnoreInsecureTLS": true,
+    "ProxyDailyLimit" : 0,
+    "ProxyDailyLimitChecker" : "memory",
+    "MaximumConnections": 150000,
+    "ReadTimeoutSeconds" : 20,
+    "ReadHeaderTimeoutSeconds" : 20,
+    "WriteTimeoutSeconds" : 20,
+    "IdleTimeoutSeconds" : 20,
+    "MaxHeaderBytes" : 1048576,
+    "AllowOrigin": "*",
+    "DefaultRedirect": "https://sfpl.io",
+    "Debug" : true,
+    "X_Consume": [
+        {
+            "Service": "nats",
+            "Hosts": [
+                "tls://localhost:4222"
+            ],
+            "Secure": true,
+            "Critical" : true,
+            "CACert": "./.setup/keys/rootCa.crt",
+            "Cert": "./.setup/keys/nats-client.crt",
+            "Key": "./.setup/keys/nats-client.key",
+            "Format": "json",
+            "MessageLimit": 65536,
+            "ByteLimit": 67108864,
+            "Filter": [
+                {
+                    "Alias": "log",
+                    "Type": "chan",
+                    "Id": "tic.log.>"
+                },
+                {
+                    "Alias": "count",
+                    "Type": "chan",
+                    "Id": "tic.count.>"
+                },
+                {
+                    "Alias": "update",
+                    "Type": "chan",
+                    "Id": "tic.update.>"
+                }
+            ]
+        }
+    ],
+    "X_Notify": [ 
+        {
+            "Service": "nats",
+            "Hosts": [
+                "tls://localhost:4222"
+            ],
+            "Context": "toc.roo.notify",
+            "Secure": true,
+            "CACert": "./.setup/keys/rootCa.crt",
+            "Cert": "./.setup/keys/nats-client.crt",
+            "Key": "./.setup/keys/nats-client.key",
+            "Format": "json"
+        }
+    ]
+}
