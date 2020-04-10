@@ -1,0 +1,11 @@
+
+version: "3.4"
+services:
+  nats:
+    image: docker.pkg.github.com/dioptre/nats/nats:latest
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+    networks:
+      - default
