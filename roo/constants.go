@@ -2,6 +2,8 @@ package main
 
 //////////////////////////////////////// Constants
 const (
+	ENV_ROO_DNS string = "ROO_DNS"
+
 	PONG              string = "pong"
 	API_LIMIT_REACHED string = "API Limit Reached"
 	HOST_NOT_FOUND    string = "Host Not Found"

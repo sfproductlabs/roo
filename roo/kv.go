@@ -152,7 +152,14 @@ func (kvs *KvService) connect() error {
 	if err != nil {
 		panic(err)
 	}
-	//TODO: Get Membership from existing nodes
+	//TODO: Join
+	//Join existing nodes before bootstrapping
+	//Request /roo/api/v1/join from other nodes
+	//Requested party runs rs, err = nh.RequestAddNode(exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
+	//Requester then runs StartOnDiskCluster
+
+	//Bootstrap
+	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)
 	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
 	alreadyJoined := false
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {

@@ -54,6 +54,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -91,6 +92,18 @@ func main() {
 	err := decoder.Decode(&configuration)
 	if err != nil {
 		log.Fatalf("[ERROR] Configuration file has errors %s", err)
+	}
+
+	////////////////////////////////////////OVERRIDE CLUSTER DNS FROM ENV
+	if envDNS := os.Getenv(ENV_ROO_DNS); envDNS != "" {
+		configuration.Cluster.DNS = envDNS
+	}
+
+	////////////////////////////////////////RANDOM DELAY
+	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
+		setupSleep := rand.Intn(60)
+		fmt.Printf("[INFO] Sleeping this node for %d seconds to avoid cluster bootstrap race.\n", setupSleep)
+		time.Sleep(time.Duration(setupSleep) * time.Second)
 	}
 
 	////////////////////////////////////////SETUP ORIGIN
