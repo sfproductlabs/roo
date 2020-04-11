@@ -97,6 +97,7 @@ type Cluster struct {
 	DNS     string
 	Binding string
 	Group   uint64
+	NodeID  uint64
 }
 
 type KvService struct { //Implements 'session'

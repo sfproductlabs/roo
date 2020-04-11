@@ -140,7 +140,7 @@ func (kvs *KvService) connect() error {
 	}
 	fmt.Printf("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
-	nodeID := rand.Uint64()
+	kvs.AppConfig.Cluster.NodeID = rand.Uint64()
 
 	// https://github.com/golang/go/issues/17393
 	if runtime.GOOS == "darwin" {
@@ -152,7 +152,7 @@ func (kvs *KvService) connect() error {
 	logger.GetLogger("transport").SetLevel(logger.WARNING)
 	logger.GetLogger("grpc").SetLevel(logger.WARNING)
 	rc := config.Config{
-		NodeID:             nodeID,
+		NodeID:             kvs.AppConfig.Cluster.NodeID,
 		ClusterID:          kvs.AppConfig.Cluster.Group,
 		ElectionRTT:        10,
 		HeartbeatRTT:       1,
@@ -163,7 +163,7 @@ func (kvs *KvService) connect() error {
 	datadir := filepath.Join(
 		"cluster-data",
 		"roo",
-		fmt.Sprintf("node%d", nodeID))
+		fmt.Sprintf("node%d", kvs.AppConfig.Cluster.NodeID))
 
 	nhc := config.NodeHostConfig{
 		WALDir:         datadir,
@@ -176,7 +176,7 @@ func (kvs *KvService) connect() error {
 		panic(err)
 	}
 	//TODO: Get Membership from existing nodes
-	initialMembers := map[uint64]string{nodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
+	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
 	alreadyJoined := false
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)

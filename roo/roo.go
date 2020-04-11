@@ -120,7 +120,8 @@ func main() {
 			} else {
 				fmt.Printf("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
 			}
-			s.Service.Session.listen()
+			//SET THE DEFAULT API TO RUN THROUGH THE KV
+			configuration.API = *s.Service
 		default:
 			panic("[ERROR] Cluster not implemented\n")
 		}
@@ -279,6 +280,23 @@ func main() {
 		w.Header().Set("access-control-max-age", "1728000")
 		w.WriteHeader(http.StatusOK)
 	}).Methods("OPTIONS")
+
+	//////////////////////////////////////// STATUS
+	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
+		json, _ := json.Marshal([6]map[string]interface{}{
+			{"client": getIP(r)},
+			{"binding": configuration.Cluster.Binding},
+			{"conns": configuration.MaximumConnections - len(connc)},
+			{"id": configuration.Cluster.NodeID},
+			{"group": configuration.Cluster.Group},
+			{"hosts": configuration.Cluster.Service.Hosts},
+		})
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(json)
+	}).Methods("GET")
+
 	//////////////////////////////////////// PING
 	rtr.HandleFunc("/roo/"+apiVersion+"/ping{pong: .*}", func(w http.ResponseWriter, r *http.Request) {
 		select {
@@ -339,13 +357,14 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	}).Methods("PUT")
-	http.Handle("/roo", rtr)
 
+	//////////////////////////////////////// ACTUALLY RUN THE SERVICES
 	go func() {
 		http.ListenAndServe(":http", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			http.Redirect(w, req, "https://"+getHost(req)+req.RequestURI, http.StatusFound)
 		}))
 	}()
+	go http.ListenAndServe(":8080", rtr)
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
