@@ -54,8 +54,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -197,25 +195,23 @@ func main() {
 	}
 
 	//////////////////////////////////////// MAX CALLS
-	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitCheck == nil && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
+	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
 		c := cache.New(24*time.Hour, 10*time.Minute)
 		configuration.ProxyDailyLimitCheck = func(ip string) uint64 {
 			var total uint64
 			if temp, found := c.Get(ip); found {
 				total = temp.(uint64)
 			}
-			total = total + 1
+			total = total + 1 //Just by checking it we increment
 			c.Set(ip, total, cache.DefaultExpiration)
 			return total
 		}
 	}
 
-	//////////////////////////////////////// PROXY API ROUTES
-	sharedBuffer := newBufferPool()
+	//////////////////////////////////////// PROXY EVERYTHING
 	certManager := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(configuration.Domains...),
-		Cache:      configuration.Cluster.Service.Session.(*KvService),
+		Prompt: autocert.AcceptTOS,
+		Cache:  configuration.Cluster.Service.Session.(*KvService),
 		Client: &acme.Client{
 			DirectoryURL: ACME_STAGING,
 		},
@@ -253,7 +249,6 @@ func main() {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		//TODO: Check certificate in cookie
 		select {
 		case <-connc:
 			//Check API Limit
@@ -262,21 +257,7 @@ func main() {
 				w.Write([]byte(API_LIMIT_REACHED))
 				return
 			}
-			//Proxy
-			w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
-			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-			origin, _ := url.Parse(configuration.ProxyUrl)
-			director := func(req *http.Request) {
-				req.Header.Add("X-Forwarded-Host", req.Host)
-				req.Header.Add("X-Origin-Host", origin.Host)
-				if configuration.ProxyForceJson {
-					req.Header.Set("content-type", "application/json")
-				}
-				req.URL.Scheme = "http"
-				req.URL.Host = origin.Host
-			}
-			proxy := &httputil.ReverseProxy{Director: director, BufferPool: sharedBuffer}
-			proxy.ServeHTTP(w, r)
+			Proxy(&w, r, &configuration)
 			connc <- struct{}{}
 		default:
 			w.Header().Set("Retry-After", "1")
