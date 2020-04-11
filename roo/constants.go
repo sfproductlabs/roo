@@ -7,8 +7,8 @@ const (
 
 	SERVICE_TYPE_NATS string = "nats"
 	SERVICE_TYPE_KV   string = "kv"
-
-	NATS_QUEUE_GROUP = "roo"
+	KV_PORT           string = ":6300"
+	NATS_QUEUE_GROUP         = "roo"
 )
 
 //Service calls

@@ -106,25 +106,37 @@ func getHost(r *http.Request) string {
 	}
 }
 
-func getMyIPs() ([][]byte, error) {
+func getMyIPs(filterIPv4 bool) ([]net.IP, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
-	ips := make([][]byte, 0, 5)
+	ips := make([]net.IP, 0, 5)
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
 		if err != nil {
 			return nil, err
 		}
 		for _, addr := range addrs {
+			var ip net.IP
 			switch v := addr.(type) {
 			case *net.IPNet:
-				ips = append(ips, v.IP)
+				ip = v.IP
 			case *net.IPAddr:
-				ips = append(ips, v.IP)
+				ip = v.IP
+			}
+			if ip != nil && (filterIPv4 && ip.To4() != nil) {
+				ips = append(ips, ip)
 			}
 		}
 	}
 	return ips, err
+}
+
+func getIPsString(ipbs []net.IP) []string {
+	ips := make([]string, 0, 5)
+	for _, ip := range ipbs {
+		ips = append(ips, ip.String())
+	}
+	return ips
 }

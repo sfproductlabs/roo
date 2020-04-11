@@ -89,7 +89,7 @@ func main() {
 	configuration := Configuration{}
 	err := decoder.Decode(&configuration)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Fatalf("[ERROR] Configuration file has errors %s", err)
 	}
 
 	////////////////////////////////////////SETUP ORIGIN
@@ -99,6 +99,32 @@ func main() {
 
 	//////////////////////////////////////// SETUP CONFIG VARIABLES
 	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
+
+	//////////////////////////////////////// LOAD CLUSTER
+	{
+		s := &configuration.Cluster
+		switch s.Service.Service {
+		case SERVICE_TYPE_KV:
+			kv := KvService{
+				Configuration: s.Service,
+				AppConfig:     &configuration,
+			}
+			err = kv.connect()
+			if err != nil || s.Service.Session == nil {
+				if s.Service.Critical {
+					log.Fatalf("[CRITICAL] Could not connect to RAFT Cluster. %s\n", err)
+				} else {
+					fmt.Printf("[ERROR] Could not connect to RAFT Cluster. %s\n", err)
+				}
+
+			} else {
+				fmt.Printf("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
+			}
+			s.Service.Session.listen()
+		default:
+			panic("[ERROR] Cluster not implemented\n")
+		}
+	}
 
 	//////////////////////////////////////// LOAD NOTIFIERS (OUTBOUND TRAFFIC)
 	for idx := range configuration.Notify {
@@ -164,7 +190,7 @@ func main() {
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist(configuration.Domains...),
-		Cache:      KvCache{},
+		Cache:      configuration.Cluster.Service.Session.(*KvService),
 	}
 	server := &http.Server{ // HTTP REDIR SSL RENEW
 		Addr:              ":https",

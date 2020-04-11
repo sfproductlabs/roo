@@ -2,17 +2,33 @@
     "ApiVersion": 1,
     "StaticDirectory": "public",
     "IgnoreInsecureTLS": true,
-    "ProxyDailyLimit" : 0,
-    "ProxyDailyLimitChecker" : "memory",
+    "ProxyDailyLimit": 0,
+    "ProxyDailyLimitChecker": "memory",
     "MaximumConnections": 150000,
-    "ReadTimeoutSeconds" : 20,
-    "ReadHeaderTimeoutSeconds" : 20,
-    "WriteTimeoutSeconds" : 20,
-    "IdleTimeoutSeconds" : 20,
-    "MaxHeaderBytes" : 1048576,
+    "ReadTimeoutSeconds": 20,
+    "ReadHeaderTimeoutSeconds": 20,
+    "WriteTimeoutSeconds": 20,
+    "IdleTimeoutSeconds": 20,
+    "MaxHeaderBytes": 1048576,
     "AllowOrigin": "*",
     "DefaultRedirect": "https://sfpl.io",
-    "Debug" : true,
+    "Debug": true,
+    "Cluster": {
+        "DNS": "localhost",
+        "Group": 1,
+        "Binding" : "",
+        "Service": {
+            "Service": "kv",
+            "Secure": true,
+            "Critical": true,
+            "CACert": "./.setup/keys/rootCa.crt",
+            "Cert": "./.setup/keys/nginx.crt",
+            "Key": "./.setup/keys/nginx.key",
+            "Format": "json",
+            "MessageLimit": 65536,
+            "ByteLimit": 67108864
+        }
+    },
     "X_Consume": [
         {
             "Service": "nats",
@@ -20,7 +36,7 @@
                 "tls://localhost:4222"
             ],
             "Secure": true,
-            "Critical" : true,
+            "Critical": true,
             "CACert": "./.setup/keys/rootCa.crt",
             "Cert": "./.setup/keys/nats-client.crt",
             "Key": "./.setup/keys/nats-client.key",
@@ -46,7 +62,7 @@
             ]
         }
     ],
-    "X_Notify": [ 
+    "X_Notify": [
         {
             "Service": "nats",
             "Hosts": [

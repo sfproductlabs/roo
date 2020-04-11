@@ -21,22 +21,18 @@ import (
 // ErrCacheMiss is returned when a certificate is not found in cache.
 var ErrCacheMiss = errors.New("acme/autocert: certificate cache miss")
 
-// KvCache implements Cache using distributed rocksdb key-value store.
-type KvCache struct {
-}
-
 // Get reads a certificate data from the specified file name.
-func (d KvCache) Get(ctx context.Context, name string) ([]byte, error) {
+func (d KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	return nil, nil
 }
 
 // Put writes the certificate data to the specified file name.
 // The file will be created with 0600 permissions.
-func (d KvCache) Put(ctx context.Context, name string, data []byte) error {
+func (d KvService) Put(ctx context.Context, name string, data []byte) error {
 	return nil
 }
 
 // Delete removes the specified file name.
-func (d KvCache) Delete(ctx context.Context, name string) error {
+func (d KvService) Delete(ctx context.Context, name string) error {
 	return nil
 }

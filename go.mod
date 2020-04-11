@@ -11,6 +11,7 @@ require (
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3 // indirect
 	google.golang.org/grpc v1.24.0 // indirect
+	honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc
 )
 
 go 1.13

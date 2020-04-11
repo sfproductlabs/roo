@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gocql/gocql"
+	"github.com/lni/dragonboat/v3"
 	"github.com/nats-io/nats.go"
 )
 
@@ -91,10 +92,17 @@ type Service struct {
 	Session session
 }
 
+type Cluster struct {
+	Service *Service
+	DNS     string
+	Binding string
+	Group   uint64
+}
+
 type KvService struct { //Implements 'session'
 	Configuration *Service
-	//kvc           *kv.Conn //TODO
-	AppConfig *Configuration
+	nh            *dragonboat.NodeHost
+	AppConfig     *Configuration
 }
 
 type NatsService struct { //Implements 'session'
@@ -109,6 +117,8 @@ type Configuration struct {
 	StaticDirectory          string   //Static FS Directory (./public/)
 	UseLocalTLS              bool
 	IgnoreInsecureTLS        bool
+	Cluster                  Cluster
+	ClusterDNS               string
 	Notify                   []Service
 	Consume                  []Service
 	API                      Service

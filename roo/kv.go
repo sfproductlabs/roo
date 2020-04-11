@@ -51,91 +51,139 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"math/rand"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
+
+	"github.com/lni/dragonboat/v3"
+	"github.com/lni/dragonboat/v3/config"
+	"github.com/lni/dragonboat/v3/logger"
 )
 
 ////////////////////////////////////////
 // Interface Implementations
 ////////////////////////////////////////
+type RequestType uint64
+
+var (
+	rlog = logger.GetLogger("roo")
+)
+
+const (
+	PUT RequestType = iota
+	GET
+)
+
+func parseCommand(msg string) (RequestType, string, string, bool) {
+	parts := strings.Split(strings.TrimSpace(msg), " ")
+	if len(parts) == 0 || (parts[0] != "put" && parts[0] != "get") {
+		return PUT, "", "", false
+	}
+	if parts[0] == "put" {
+		if len(parts) != 3 {
+			return PUT, "", "", false
+		}
+		return PUT, parts[1], parts[2], true
+	}
+	if len(parts) != 2 {
+		return GET, "", "", false
+	}
+	return GET, parts[1], "", true
+}
 
 //////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs
-func (i *KvService) connect() error {
-	// nodeID := flag.Int("nodeid", 1, "NodeID to use")
-	// addr := flag.String("addr", "", "Nodehost address")
-	// join := flag.Bool("join", false, "Joining a new node")
-	// flag.Parse()
-	// if len(*addr) == 0 && *nodeID != 1 && *nodeID != 2 && *nodeID != 3 {
-	// 	fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
-	// 	os.Exit(1)
-	// }
-	// // https://github.com/golang/go/issues/17393
-	// if runtime.GOOS == "darwin" {
-	// 	signal.Ignore(syscall.Signal(0xd))
-	// }
-	// initialMembers := make(map[uint64]string)
-	// if !*join {
-	// 	for idx, v := range addresses {
-	// 		initialMembers[uint64(idx+1)] = v
-	// 	}
-	// }
-	// var nodeAddr string
-	// if len(*addr) != 0 {
-	// 	nodeAddr = *addr
-	// } else {
-	// 	nodeAddr = initialMembers[uint64(*nodeID)]
-	// }
-	// fmt.Fprintf(os.Stdout, "node address: %s\n", nodeAddr)
-	// logger.GetLogger("raft").SetLevel(logger.ERROR)
-	// logger.GetLogger("rsm").SetLevel(logger.WARNING)
-	// logger.GetLogger("transport").SetLevel(logger.WARNING)
-	// logger.GetLogger("grpc").SetLevel(logger.WARNING)
-	// rc := config.Config{
-	// 	NodeID:             uint64(*nodeID),
-	// 	ClusterID:          exampleClusterID,
-	// 	ElectionRTT:        10,
-	// 	HeartbeatRTT:       1,
-	// 	CheckQuorum:        true,
-	// 	SnapshotEntries:    10,
-	// 	CompactionOverhead: 5,
-	// }
-	// datadir := filepath.Join(
-	// 	"example-data",
-	// 	"helloworld-data",
-	// 	fmt.Sprintf("node%d", *nodeID))
-	// nhc := config.NodeHostConfig{
-	// 	WALDir:         datadir,
-	// 	NodeHostDir:    datadir,
-	// 	RTTMillisecond: 200,
-	// 	RaftAddress:    nodeAddr,
-	// }
-	// nh, err := dragonboat.NewNodeHost(nhc)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// if err := nh.StartOnDiskCluster(initialMembers, *join, NewDiskKV, rc); err != nil {
-	// 	fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
-	// 	os.Exit(1)
-	// }
-	// raftStopper := syncutil.NewStopper()
-	// consoleStopper := syncutil.NewStopper()
-	// ch := make(chan string, 16)
-	// consoleStopper.RunWorker(func() {
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	for {
-	// 		s, err := reader.ReadString('\n')
-	// 		if err != nil {
-	// 			close(ch)
-	// 			return
-	// 		}
-	// 		if s == "exit\n" {
-	// 			raftStopper.Stop()
-	// 			nh.Stop()
-	// 			return
-	// 		}
-	// 		ch <- s
-	// 	}
-	// })
+func (kvs *KvService) connect() error {
+	kvs.Configuration.Hosts, _ = net.LookupHost(kvs.AppConfig.Cluster.DNS)
+	myIPs, _ := getMyIPs(true)
+	fmt.Printf("Cluster: My IPs: %s\n", getIPsString(myIPs))
+	if kvs.AppConfig.Cluster.Binding != "" {
+		tempBinding := kvs.AppConfig.Cluster.Binding
+		kvs.AppConfig.Cluster.Binding = ""
+		for _, ip := range myIPs {
+			if ip.String() == tempBinding {
+				kvs.AppConfig.Cluster.Binding = tempBinding
+				break
+			}
+		}
+	}
+	if kvs.AppConfig.Cluster.Binding == "" {
+		for _, ip := range myIPs {
+			for _, host := range kvs.Configuration.Hosts {
+				if ip.String() == host {
+					kvs.AppConfig.Cluster.Binding = host
+					break
+				}
+			}
+		}
+	}
+	myip := net.ParseIP(kvs.AppConfig.Cluster.Binding)
+	if myip == nil {
+		log.Fatalf("[CRITICAL] Cluster: Could not initiate cluster on a service IP")
+	} else {
+		fmt.Printf("Cluster: Binding set to: %s\n", kvs.AppConfig.Cluster.Binding)
+	}
+
+	//Now exclude IPs from the hosts (ours or other IPv6)
+	for i := 0; i < len(kvs.Configuration.Hosts); i++ {
+		if kvs.Configuration.Hosts[i] == kvs.AppConfig.Cluster.Binding || net.ParseIP(kvs.Configuration.Hosts[i]) == nil || net.ParseIP(kvs.Configuration.Hosts[i]).To4() == nil {
+			copy(kvs.Configuration.Hosts[i:], kvs.Configuration.Hosts[i+1:])
+			kvs.Configuration.Hosts = kvs.Configuration.Hosts[:len(kvs.Configuration.Hosts)-1]
+		}
+	}
+	fmt.Printf("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
+
+	nodeID := rand.Uint64()
+
+	// https://github.com/golang/go/issues/17393
+	if runtime.GOOS == "darwin" {
+		signal.Ignore(syscall.Signal(0xd))
+	}
+
+	logger.GetLogger("raft").SetLevel(logger.ERROR)
+	logger.GetLogger("rsm").SetLevel(logger.WARNING)
+	logger.GetLogger("transport").SetLevel(logger.WARNING)
+	logger.GetLogger("grpc").SetLevel(logger.WARNING)
+	rc := config.Config{
+		NodeID:             nodeID,
+		ClusterID:          kvs.AppConfig.Cluster.Group,
+		ElectionRTT:        10,
+		HeartbeatRTT:       1,
+		CheckQuorum:        true,
+		SnapshotEntries:    10,
+		CompactionOverhead: 5,
+	}
+	datadir := filepath.Join(
+		"cluster-data",
+		"roo",
+		fmt.Sprintf("node%d", nodeID))
+
+	nhc := config.NodeHostConfig{
+		WALDir:         datadir,
+		NodeHostDir:    datadir,
+		RTTMillisecond: 200,
+		RaftAddress:    kvs.AppConfig.Cluster.Binding + KV_PORT,
+	}
+	nh, err := dragonboat.NewNodeHost(nhc)
+	if err != nil {
+		panic(err)
+	}
+	//TODO: Get Membership from existing nodes
+	initialMembers := map[uint64]string{nodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
+	alreadyJoined := false
+	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
+		os.Exit(1)
+	}
+	kvs.nh = nh
+	kvs.Configuration.Session = kvs
 	return nil
 }
 
@@ -167,7 +215,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 	// }
 }
 
-func (i *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
+func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
 	switch s.ServiceType {
 	case SERVE_GET_PING:
 		json, _ := json.Marshal(map[string]interface{}{"ping": (*s.Values)["pong"]})
@@ -182,16 +230,115 @@ func (i *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArg
 }
 
 //////////////////////////////////////// C*
-func (i *KvService) write(w *WriteArgs) error {
+func (kvs *KvService) write(w *WriteArgs) error {
 	err := fmt.Errorf("Could not write to any kv server in cluster")
 	//v := *w.Values
 	switch w.WriteType {
 	case WRITE_PUT_KV:
 		//v["data"]?
+		// raftStopper := syncutil.NewStopper()
+		// consoleStopper := syncutil.NewStopper()
+		// ch := make(chan string, 16)
+		// consoleStopper.RunWorker(func() {
+		// 	reader := bufio.NewReader(os.Stdin)
+		// 	for {
+		// 		s, err := reader.ReadString('\n')
+		// 		if err != nil {
+		// 			close(ch)
+		// 			return
+		// 		}
+		// 		if s == "exit\n" {
+		// 			raftStopper.Stop()
+		// 			nh.Stop()
+		// 			return
+		// 		}
+		// 		ch <- s
+		// 	}
+		// })
+		// raftStopper.RunWorker(func() {
+		// 	cs := nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
+		// 	for {
+		// 		select {
+		// 		case v, ok := <-ch:
+		// 			if !ok {
+		// 				return
+		// 			}
+		// 			msg := strings.Replace(v, "\n", "", 1)
+		// 			// input message must be in the following formats -
+		// 			// put key value
+		// 			// get key
+		// 			rt, key, val, ok := parseCommand(msg)
+		// 			if !ok {
+		// 				fmt.Fprintf(os.Stderr, "invalid input\n")
+		// 				continue
+		// 			}
+		// 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		// 			if rt == PUT {
+		// 				kv := &KVData{
+		// 					Key: key,
+		// 					Val: val,
+		// 				}
+		// 				data, err := json.Marshal(kv)
+		// 				if err != nil {
+		// 					panic(err)
+		// 				}
+		// 				_, err = nh.SyncPropose(ctx, cs, data)
+		// 				if err != nil {
+		// 					fmt.Fprintf(os.Stderr, "SyncPropose returned error %v\n", err)
+		// 				}
+		// 			} else {
+		// 				result, err := nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(key))
+		// 				if err != nil {
+		// 					fmt.Fprintf(os.Stderr, "SyncRead returned error %v\n", err)
+		// 				} else {
+		// 					fmt.Fprintf(os.Stdout, "query key: %s, result: %s\n", key, result)
+		// 				}
+		// 			}
+		// 			cancel()
+		// 		case <-raftStopper.ShouldStop():
+		// 			return
+		// 		}
+		// 	}
+		// })
+		// go raftStopper.Wait()
+
+		// err := fmt.Errorf("Could not connect to NATS")
+
+		// certFile := kvs.Configuration.Cert
+		// keyFile := kvs.Configuration.Key
+		// cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		// if err != nil {
+		// 	log.Fatalf("[ERROR] Parsing X509 certificate/key pair: %v", err)
+		// }
+
+		// rootPEM, err := ioutil.ReadFile(kvs.Configuration.CACert)
+
+		// pool := x509.NewCertPool()
+		// ok := pool.AppendCertsFromPEM([]byte(rootPEM))
+		// if !ok {
+		// 	log.Fatalln("[ERROR] Failed to parse root certificate.")
+		// }
+
+		// config := &tls.Config{
+		// 	//ServerName:         kvs.Configuration.Hosts[0],
+		// 	Certificates:       []tls.Certificate{cert},
+		// 	RootCAs:            pool,
+		// 	MinVersion:         tls.VersionTLS12,
+		// 	InsecureSkipVerify: kvs.Configuration.Secure, //TODO: SECURITY THREAT
+		// }
+
+		// if kvs.nc, err = nats.Connect(strings.Join(kvs.Configuration.Hosts[:], ","), nats.Secure(config)); err != nil {
+		// 	fmt.Println("[ERROR] Connecting to NATS:", err)
+		// 	return err
+		// }
+		// if kvs.ec, err = nats.NewEncodedConn(kvs.nc, nats.JSON_ENCODER); err != nil {
+		// 	fmt.Println("[ERROR] Encoding NATS:", err)
+		// 	return err
+		// }
 		return err
 	default:
 		//TODO: Manually run query via query in config.json
-		if i.AppConfig.Debug {
+		if kvs.AppConfig.Debug {
 			fmt.Printf("UNHANDLED %s\n", w)
 		}
 	}

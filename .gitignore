@@ -23,3 +23,6 @@ pem/
 config.*.json
 
 .DS_Store
+
+example-data/
+cluster-data/
