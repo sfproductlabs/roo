@@ -282,7 +282,6 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	})
-	log.Fatal(server.ListenAndServeTLS("", ""))
 
 	//////////////////////////////////////// API ON :8080
 	rtr := mux.NewRouter()
@@ -295,6 +294,13 @@ func main() {
 		w.Header().Set("access-control-max-age", "1728000")
 		w.WriteHeader(http.StatusOK)
 	}).Methods("OPTIONS")
+
+	//////////////////////////////////////// PING
+	rtr.HandleFunc("/roo/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		w.Write([]byte("PONG"))
+	}).Methods("GET")
 
 	//////////////////////////////////////// STATUS
 	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
@@ -310,13 +316,6 @@ func main() {
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(json)
-	}).Methods("GET")
-
-	//////////////////////////////////////// PING
-	rtr.HandleFunc("/roo/"+apiVersion+"/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-		w.Write([]byte("PONG"))
 	}).Methods("GET")
 
 	//////////////////////////////////////// GET KV
@@ -369,6 +368,7 @@ func main() {
 	}()
 	//API INTERNAL
 	go http.ListenAndServe(API_PORT, rtr)
+	log.Fatal(server.ListenAndServeTLS("", ""))
 
 }
 

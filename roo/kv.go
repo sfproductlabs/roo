@@ -155,7 +155,11 @@ func (kvs *KvService) connect() error {
 	//TODO: Join
 	//Join existing nodes before bootstrapping
 	//Request /roo/api/v1/join from other nodes
-	//Requested party runs rs, err = nh.RequestAddNode(exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
+	// r,_ := http.NewRequest("GET", "http://localhost/slow/one.json", nil)
+	// fmt.Println(path.Base(r.URL.Path))
+	//
+	//Requested party runs rs, err = nh.SyncRequestAddNode(ctx, exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
+	//
 	//Requester then runs StartOnDiskCluster
 
 	//Bootstrap
