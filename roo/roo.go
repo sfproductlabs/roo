@@ -298,27 +298,14 @@ func main() {
 	}).Methods("GET")
 
 	//////////////////////////////////////// PING
-	rtr.HandleFunc("/roo/"+apiVersion+"/ping{pong: .*}", func(w http.ResponseWriter, r *http.Request) {
-		select {
-		case <-connc:
-			params := mux.Vars(r)
-			sargs := ServiceArgs{
-				ServiceType: SERVE_GET_PING,
-				Values:      &params,
-			}
-			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(err.Error()))
-			}
-			connc <- struct{}{}
-		default:
-			w.Header().Set("Retry-After", "1")
-			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
-		}
+	rtr.HandleFunc("/roo/"+apiVersion+"/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		w.Write([]byte("PONG"))
 	}).Methods("GET")
+
 	//////////////////////////////////////// GET KV
-	rtr.HandleFunc("/roo/kv/"+apiVersion+"/{key: .*}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -338,7 +325,7 @@ func main() {
 		}
 	}).Methods("GET")
 	//////////////////////////////////////// PUT KV
-	rtr.HandleFunc("/roo/kv/"+apiVersion+"/{key: .*}/{value: .*}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}/{value: .*}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -364,7 +351,7 @@ func main() {
 			http.Redirect(w, req, "https://"+getHost(req)+req.RequestURI, http.StatusFound)
 		}))
 	}()
-	go http.ListenAndServe(":8080", rtr)
+	go http.ListenAndServe(API_PORT, rtr)
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
