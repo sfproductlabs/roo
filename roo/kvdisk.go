@@ -138,6 +138,15 @@ func (r *rocksdb) lookup(query []byte) ([]byte, error) {
 	return v, nil
 }
 
+func (r *rocksdb) delete(query []byte) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.closed {
+		return errors.New("db already closed")
+	}
+	return r.db.Delete(r.wo, query)
+}
+
 func (r *rocksdb) close() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -390,6 +399,19 @@ func (d *DiskKV) Lookup(key interface{}) (interface{}, error) {
 		return v, err
 	}
 	return nil, errors.New("db closed")
+}
+
+// Delete cleans up the state machine.
+func (d *DiskKV) Delete(key interface{}) error {
+	db := (*rocksdb)(atomic.LoadPointer(&d.db))
+	if db != nil {
+		err := db.delete(key.([]byte))
+		if err == nil && d.closed {
+			panic("lookup returned valid result when DiskKV is already closed")
+		}
+		return err
+	}
+	return errors.New("db closed")
 }
 
 // Gets all records prefixed with key

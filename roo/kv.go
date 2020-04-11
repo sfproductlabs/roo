@@ -49,6 +49,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -61,6 +62,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
@@ -235,6 +237,7 @@ func (kvs *KvService) write(w *WriteArgs) error {
 	//v := *w.Values
 	switch w.WriteType {
 	case WRITE_PUT_KV:
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		//v["data"]?
 		// raftStopper := syncutil.NewStopper()
 		// consoleStopper := syncutil.NewStopper()
