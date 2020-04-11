@@ -238,6 +238,7 @@ func main() {
 			//CurvePreferences:       []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		},
 	}
+	//Handle Everything!
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if !configuration.IgnoreProxyOptions && r.Method == http.MethodOptions {
 			//Lets just allow requests to this endpoint
@@ -266,7 +267,7 @@ func main() {
 	})
 	log.Fatal(server.ListenAndServeTLS("", ""))
 
-	//////////////////////////////////////// API
+	//////////////////////////////////////// API ON :8080
 	rtr := mux.NewRouter()
 	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
 	rtr.HandleFunc("/roo/"+apiVersion, func(w http.ResponseWriter, r *http.Request) {
