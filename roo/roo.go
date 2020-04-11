@@ -360,6 +360,7 @@ func main() {
 	}).Methods("PUT")
 
 	//////////////////////////////////////// ACTUALLY RUN THE SERVICES
+	//TODO: Wait to start until nh is created from raft cluster
 	//Redirect HTTP->HTTPS
 	go func() {
 		http.ListenAndServe(":http", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -368,6 +369,7 @@ func main() {
 	}()
 	//API INTERNAL
 	go http.ListenAndServe(API_PORT, rtr)
+	//Start the actual Proxy Service
 	log.Fatal(server.ListenAndServeTLS("", ""))
 
 }
