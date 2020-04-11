@@ -49,6 +49,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -209,9 +210,12 @@ func main() {
 	}
 
 	//////////////////////////////////////// PROXY EVERYTHING
+	configuration.ProxyCache = cache.New(60*time.Second, 90*time.Second)
+	configuration.ProxySharedBufferPool = newBufferPool()
 	certManager := autocert.Manager{
-		Prompt: autocert.AcceptTOS,
-		Cache:  configuration.Cluster.Service.Session.(*KvService),
+		Prompt:     autocert.AcceptTOS,
+		Cache:      configuration.Cluster.Service.Session.(*KvService),
+		HostPolicy: func(context.Context, string) error { return nil }, //Allow everything
 		Client: &acme.Client{
 			DirectoryURL: ACME_STAGING,
 		},

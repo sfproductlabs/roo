@@ -2,11 +2,13 @@ package main
 
 import (
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/lni/dragonboat/v3"
 	"github.com/nats-io/nats.go"
+	"github.com/patrickmn/go-cache"
 )
 
 ////////////////////////////////////////
@@ -134,6 +136,8 @@ type Configuration struct {
 	ProxyDailyLimit          uint64
 	ProxyDailyLimitChecker   string //Service, Ex. casssandra
 	ProxyDailyLimitCheck     func(string) uint64
+	ProxyCache               *cache.Cache
+	ProxySharedBufferPool    httputil.BufferPool
 	SchemaVersion            int
 	ApiVersion               int
 	Debug                    bool

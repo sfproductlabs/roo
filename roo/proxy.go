@@ -1,35 +1,51 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
+
+	"github.com/patrickmn/go-cache"
 )
 
-type Host url.URL
-
-var sharedBuffer httputil.BufferPool = newBufferPool()
-
 func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configuration) {
-
 	w := *writer
-	//Proxy
-	w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
-	w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-	origin, _ := url.Parse(configuration.ProxyUrl)
-	director := func(req *http.Request) {
-		req.Header.Add("X-Forwarded-Host", req.Host)
-		req.Header.Add("X-Origin-Host", origin.Host)
-		if configuration.ProxyForceJson {
-			req.Header.Set("content-type", "application/json")
-		}
-		req.URL.Scheme = "http"
-		req.URL.Host = origin.Host
+
+	//Check the local cached proxy list
+	if p, found := configuration.ProxyCache.Get(r.Host); found {
+		p.(*httputil.ReverseProxy).ServeHTTP(w, r)
+		return
 	}
-	proxy := &httputil.ReverseProxy{Director: director, BufferPool: sharedBuffer}
-	proxy.ServeHTTP(w, r)
-	//or error
-	//w.WriteHeader(http.StatusTooManyRequests)
-	//w.Write([]byte(API_LIMIT_REACHED))
-	//return
+	//Then check the kv-cluster
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
+	defer cancel()
+	//r = r.WithContext(ctx)
+	if dest, err := configuration.Cluster.Service.Session.(*KvService).Get(ctx, r.Host); err != nil || dest == nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(HOST_NOT_FOUND))
+	} else {
+		//Proxy
+		w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		destination, err := url.Parse(string(dest))
+		if err != nil {
+			fmt.Println("Could not route from %s to %s, bad destination", r.Host, string(dest))
+		}
+		director := func(req *http.Request) {
+			req.Header.Add("X-Forwarded-Host", req.Host)
+			req.Header.Add("X-Origin-Host", destination.Host)
+			if configuration.ProxyForceJson {
+				req.Header.Set("content-type", "application/json")
+			}
+			req.URL.Scheme = destination.Scheme
+			req.URL.Host = destination.Host
+		}
+		proxy := &httputil.ReverseProxy{Director: director, BufferPool: configuration.ProxySharedBufferPool}
+		configuration.ProxyCache.Set(r.Host, proxy, cache.DefaultExpiration)
+		proxy.ServeHTTP(w, r)
+	}
+
 }
