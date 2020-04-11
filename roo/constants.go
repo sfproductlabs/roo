@@ -5,11 +5,14 @@ const (
 	PONG              string = "pong"
 	API_LIMIT_REACHED string = "API Limit Reached"
 
+	MEMORY_CHECKER    string = "memory"
 	SERVICE_TYPE_NATS string = "nats"
 	SERVICE_TYPE_KV   string = "kv"
 	KV_PORT           string = ":6300"
 	API_PORT          string = ":6299"
 	NATS_QUEUE_GROUP         = "roo"
+	ACME_STAGING      string = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	ACME_PRODUCTION   string = "https://acme-v02.api.letsencrypt.org/directory"
 )
 
 //Service calls

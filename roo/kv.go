@@ -59,7 +59,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"syscall"
 
 	"github.com/lni/dragonboat/v3"
@@ -75,28 +74,6 @@ type RequestType uint64
 var (
 	rlog = logger.GetLogger("roo")
 )
-
-const (
-	PUT RequestType = iota
-	GET
-)
-
-func parseCommand(msg string) (RequestType, string, string, bool) {
-	parts := strings.Split(strings.TrimSpace(msg), " ")
-	if len(parts) == 0 || (parts[0] != "put" && parts[0] != "get") {
-		return PUT, "", "", false
-	}
-	if parts[0] == "put" {
-		if len(parts) != 3 {
-			return PUT, "", "", false
-		}
-		return PUT, parts[1], parts[2], true
-	}
-	if len(parts) != 2 {
-		return GET, "", "", false
-	}
-	return GET, parts[1], "", true
-}
 
 //////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs

@@ -39,7 +39,7 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 // Put writes the certificate data to the specified kv.
 func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
-	kv := &KVData{
+	kv := &KVAction{
 		Key: name,
 		Val: string(data),
 	}

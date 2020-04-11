@@ -61,6 +61,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/patrickmn/go-cache"
+	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -187,11 +189,36 @@ func main() {
 	//**************************************
 	// THE APP BEGINS HERE IN ERNEST
 	//**************************************
-	//////////////////////////////////////// SSL CERT MANAGER
+
+	//////////////////////////////////////// MAX CHANNELS
+	connc := make(chan struct{}, configuration.MaximumConnections)
+	for i := 0; i < configuration.MaximumConnections; i++ {
+		connc <- struct{}{}
+	}
+
+	//////////////////////////////////////// MAX CALLS
+	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitCheck == nil && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
+		c := cache.New(24*time.Hour, 10*time.Minute)
+		configuration.ProxyDailyLimitCheck = func(ip string) uint64 {
+			var total uint64
+			if temp, found := c.Get(ip); found {
+				total = temp.(uint64)
+			}
+			total = total + 1
+			c.Set(ip, total, cache.DefaultExpiration)
+			return total
+		}
+	}
+
+	//////////////////////////////////////// PROXY API ROUTES
+	sharedBuffer := newBufferPool()
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist(configuration.Domains...),
 		Cache:      configuration.Cluster.Service.Session.(*KvService),
+		Client: &acme.Client{
+			DirectoryURL: ACME_STAGING,
+		},
 	}
 	server := &http.Server{ // HTTP REDIR SSL RENEW
 		Addr:              ":https",
@@ -215,61 +242,50 @@ func main() {
 			//CurvePreferences:       []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		},
 	}
-
-	//////////////////////////////////////// MAX CHANNELS
-	connc := make(chan struct{}, configuration.MaximumConnections)
-	for i := 0; i < configuration.MaximumConnections; i++ {
-		connc <- struct{}{}
-	}
-
-	//////////////////////////////////////// PROXY API ROUTES
-	// TODO:
-	sharedBuffer := newBufferPool()
-	if configuration.ProxyUrl != "" {
-		fmt.Println("Proxying to:", configuration.ProxyUrl)
-		origin, _ := url.Parse(configuration.ProxyUrl)
-		director := func(req *http.Request) {
-			req.Header.Add("X-Forwarded-Host", req.Host)
-			req.Header.Add("X-Origin-Host", origin.Host)
-			if configuration.ProxyForceJson {
-				req.Header.Set("content-type", "application/json")
-			}
-			req.URL.Scheme = "http"
-			req.URL.Host = origin.Host
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if !configuration.IgnoreProxyOptions && r.Method == http.MethodOptions {
+			//Lets just allow requests to this endpoint
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			w.Header().Set("access-control-allow-credentials", "true")
+			w.Header().Set("access-control-allow-headers", "Authorization,Accept,X-CSRFToken,User")
+			w.Header().Set("access-control-allow-methods", "GET,POST,HEAD,PUT,DELETE")
+			w.Header().Set("access-control-max-age", "1728000")
+			w.WriteHeader(http.StatusOK)
+			return
 		}
-		proxy := &httputil.ReverseProxy{Director: director, BufferPool: sharedBuffer}
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			if !configuration.IgnoreProxyOptions && r.Method == http.MethodOptions {
-				//Lets just allow requests to this endpoint
-				w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-				w.Header().Set("access-control-allow-credentials", "true")
-				w.Header().Set("access-control-allow-headers", "Authorization,Accept,X-CSRFToken,User")
-				w.Header().Set("access-control-allow-methods", "GET,POST,HEAD,PUT,DELETE")
-				w.Header().Set("access-control-max-age", "1728000")
-				w.WriteHeader(http.StatusOK)
+		//TODO: Check certificate in cookie
+		select {
+		case <-connc:
+			//Check API Limit
+			if err := check(&configuration, r); err != nil {
+				w.WriteHeader(http.StatusTooManyRequests)
+				w.Write([]byte(API_LIMIT_REACHED))
 				return
 			}
-			//TODO: Check certificate in cookie
-			select {
-			case <-connc:
-				//Check API Limit
-				if err := check(&configuration, r); err != nil {
-					w.WriteHeader(http.StatusTooManyRequests)
-					w.Write([]byte(API_LIMIT_REACHED))
-					return
+			//Proxy
+			w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			origin, _ := url.Parse(configuration.ProxyUrl)
+			director := func(req *http.Request) {
+				req.Header.Add("X-Forwarded-Host", req.Host)
+				req.Header.Add("X-Origin-Host", origin.Host)
+				if configuration.ProxyForceJson {
+					req.Header.Set("content-type", "application/json")
 				}
-				//Proxy
-				w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
-				w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-				proxy.ServeHTTP(w, r)
-				connc <- struct{}{}
-			default:
-				w.Header().Set("Retry-After", "1")
-				http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+				req.URL.Scheme = "http"
+				req.URL.Host = origin.Host
 			}
-		})
-	}
+			proxy := &httputil.ReverseProxy{Director: director, BufferPool: sharedBuffer}
+			proxy.ServeHTTP(w, r)
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	})
+	log.Fatal(server.ListenAndServeTLS("", ""))
 
+	//////////////////////////////////////// API
 	rtr := mux.NewRouter()
 	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
 	rtr.HandleFunc("/roo/"+apiVersion, func(w http.ResponseWriter, r *http.Request) {
@@ -346,13 +362,15 @@ func main() {
 	}).Methods("PUT")
 
 	//////////////////////////////////////// ACTUALLY RUN THE SERVICES
+	//Redirect HTTP->HTTPS
 	go func() {
 		http.ListenAndServe(":http", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			http.Redirect(w, req, "https://"+getHost(req)+req.RequestURI, http.StatusFound)
 		}))
 	}()
+	//API INTERNAL
 	go http.ListenAndServe(API_PORT, rtr)
-	log.Fatal(server.ListenAndServeTLS("", ""))
+
 }
 
 ////////////////////////////////////////

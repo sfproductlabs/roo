@@ -39,9 +39,17 @@ import (
 
 const (
 	appliedIndexKey    string = "disk_kv_applied_index"
-	testDBDirName      string = "example-data"
+	testDBDirName      string = "cluster-data"
 	currentDBFilename  string = "current"
 	updatingDBFilename string = "current.updating"
+)
+
+const (
+	PUT    string = "PUT"
+	GET    string = "GET"
+	DELETE string = "DELETE"
+	UPDATE string = "UPDATE"
+	SCAN   string = "SCAN"
 )
 
 func syncDir(dir string) (err error) {
@@ -67,9 +75,10 @@ func syncDir(dir string) (err error) {
 	return df.Sync()
 }
 
-type KVData struct {
-	Key string
-	Val string
+type KVAction struct {
+	Action string
+	Key    string
+	Val    string
 }
 
 // rocksdb is a wrapper to ensure lookup() and close() can be concurrently
@@ -389,7 +398,22 @@ func (d *DiskKV) Open(stopc <-chan struct{}) (uint64, error) {
 }
 
 // Lookup queries the state machine.
-func (d *DiskKV) Lookup(key interface{}) (interface{}, error) {
+func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
+	dataKV := &KVAction{ //Set the deafult lookup to a byte query
+		Action: GET,
+		Key:    string(cmd.([]byte)),
+	}
+	json.Unmarshal(cmd.([]byte), dataKV) //Ignore any errors
+	switch dataKV.Action {
+	case SCAN:
+		return d.Scan(dataKV.Key)
+	default:
+		return d.Get(dataKV.Key)
+	}
+}
+
+// Lookup queries the state machine.
+func (d *DiskKV) Get(key interface{}) (interface{}, error) {
 	db := (*rocksdb)(atomic.LoadPointer(&d.db))
 	if db != nil {
 		v, err := db.lookup(key.([]byte))
@@ -444,7 +468,7 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 	defer wb.Destroy()
 	db := (*rocksdb)(atomic.LoadPointer(&d.db))
 	for idx, e := range ents {
-		dataKV := &KVData{}
+		dataKV := &KVAction{}
 		if err := json.Unmarshal(e.Cmd, dataKV); err != nil {
 			panic(err)
 		}
@@ -514,7 +538,7 @@ func (d *DiskKV) saveToWriter(db *rocksdb,
 	for iter.SeekToFirst(); iter.Valid(); iter.Next() {
 		key := iter.Key()
 		val := iter.Value()
-		dataKv := &KVData{
+		dataKv := &KVAction{
 			Key: string(key.Data()),
 			Val: string(val.Data()),
 		}
@@ -585,7 +609,7 @@ func (d *DiskKV) RecoverFromSnapshot(r io.Reader,
 		if _, err := io.ReadFull(r, data); err != nil {
 			return err
 		}
-		dataKv := &KVData{}
+		dataKv := &KVAction{}
 		if err := json.Unmarshal(data, dataKv); err != nil {
 			panic(err)
 		}
