@@ -10,12 +10,12 @@ type Host url.URL
 
 var sharedBuffer httputil.BufferPool = newBufferPool()
 
-func Proxy(w *http.ResponseWriter, r *http.Request, configuration *Configuration) {
+func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configuration) {
 
-	writer := *w
+	w := *writer
 	//Proxy
-	writer.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
-	writer.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+	w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
+	w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 	origin, _ := url.Parse(configuration.ProxyUrl)
 	director := func(req *http.Request) {
 		req.Header.Add("X-Forwarded-Host", req.Host)
@@ -27,7 +27,7 @@ func Proxy(w *http.ResponseWriter, r *http.Request, configuration *Configuration
 		req.URL.Host = origin.Host
 	}
 	proxy := &httputil.ReverseProxy{Director: director, BufferPool: sharedBuffer}
-	proxy.ServeHTTP(writer, r)
+	proxy.ServeHTTP(w, r)
 	//or error
 	//w.WriteHeader(http.StatusTooManyRequests)
 	//w.Write([]byte(API_LIMIT_REACHED))
