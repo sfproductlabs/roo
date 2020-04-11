@@ -49,7 +49,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -62,7 +61,6 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
@@ -237,107 +235,9 @@ func (kvs *KvService) write(w *WriteArgs) error {
 	//v := *w.Values
 	switch w.WriteType {
 	case WRITE_PUT_KV:
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		//ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		//v["data"]?
-		// raftStopper := syncutil.NewStopper()
-		// consoleStopper := syncutil.NewStopper()
-		// ch := make(chan string, 16)
-		// consoleStopper.RunWorker(func() {
-		// 	reader := bufio.NewReader(os.Stdin)
-		// 	for {
-		// 		s, err := reader.ReadString('\n')
-		// 		if err != nil {
-		// 			close(ch)
-		// 			return
-		// 		}
-		// 		if s == "exit\n" {
-		// 			raftStopper.Stop()
-		// 			nh.Stop()
-		// 			return
-		// 		}
-		// 		ch <- s
-		// 	}
-		// })
-		// raftStopper.RunWorker(func() {
-		// 	cs := nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
-		// 	for {
-		// 		select {
-		// 		case v, ok := <-ch:
-		// 			if !ok {
-		// 				return
-		// 			}
-		// 			msg := strings.Replace(v, "\n", "", 1)
-		// 			// input message must be in the following formats -
-		// 			// put key value
-		// 			// get key
-		// 			rt, key, val, ok := parseCommand(msg)
-		// 			if !ok {
-		// 				fmt.Fprintf(os.Stderr, "invalid input\n")
-		// 				continue
-		// 			}
-		// 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		// 			if rt == PUT {
-		// 				kv := &KVData{
-		// 					Key: key,
-		// 					Val: val,
-		// 				}
-		// 				data, err := json.Marshal(kv)
-		// 				if err != nil {
-		// 					panic(err)
-		// 				}
-		// 				_, err = nh.SyncPropose(ctx, cs, data)
-		// 				if err != nil {
-		// 					fmt.Fprintf(os.Stderr, "SyncPropose returned error %v\n", err)
-		// 				}
-		// 			} else {
-		// 				result, err := nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(key))
-		// 				if err != nil {
-		// 					fmt.Fprintf(os.Stderr, "SyncRead returned error %v\n", err)
-		// 				} else {
-		// 					fmt.Fprintf(os.Stdout, "query key: %s, result: %s\n", key, result)
-		// 				}
-		// 			}
-		// 			cancel()
-		// 		case <-raftStopper.ShouldStop():
-		// 			return
-		// 		}
-		// 	}
-		// })
-		// go raftStopper.Wait()
 
-		// err := fmt.Errorf("Could not connect to NATS")
-
-		// certFile := kvs.Configuration.Cert
-		// keyFile := kvs.Configuration.Key
-		// cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-		// if err != nil {
-		// 	log.Fatalf("[ERROR] Parsing X509 certificate/key pair: %v", err)
-		// }
-
-		// rootPEM, err := ioutil.ReadFile(kvs.Configuration.CACert)
-
-		// pool := x509.NewCertPool()
-		// ok := pool.AppendCertsFromPEM([]byte(rootPEM))
-		// if !ok {
-		// 	log.Fatalln("[ERROR] Failed to parse root certificate.")
-		// }
-
-		// config := &tls.Config{
-		// 	//ServerName:         kvs.Configuration.Hosts[0],
-		// 	Certificates:       []tls.Certificate{cert},
-		// 	RootCAs:            pool,
-		// 	MinVersion:         tls.VersionTLS12,
-		// 	InsecureSkipVerify: kvs.Configuration.Secure, //TODO: SECURITY THREAT
-		// }
-
-		// if kvs.nc, err = nats.Connect(strings.Join(kvs.Configuration.Hosts[:], ","), nats.Secure(config)); err != nil {
-		// 	fmt.Println("[ERROR] Connecting to NATS:", err)
-		// 	return err
-		// }
-		// if kvs.ec, err = nats.NewEncodedConn(kvs.nc, nats.JSON_ENCODER); err != nil {
-		// 	fmt.Println("[ERROR] Encoding NATS:", err)
-		// 	return err
-		// }
 		return err
 	default:
 		//TODO: Manually run query via query in config.json
