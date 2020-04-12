@@ -49,8 +49,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -60,6 +62,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
@@ -155,15 +158,36 @@ func (kvs *KvService) connect() error {
 	//TODO: Join
 	//Join existing nodes before bootstrapping
 	//Request /roo/api/v1/join from other nodes
-	// r,_ := http.NewRequest("GET", "http://localhost/slow/one.json", nil)
-	// fmt.Println(path.Base(r.URL.Path))
-	//
-	//Requested party runs rs, err = nh.SyncRequestAddNode(ctx, exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
-	//
-	//Requester then runs StartOnDiskCluster
+	for i, h := range kvs.Configuration.Hosts {
+
+		r, _ := http.NewRequest("GET", "http://"+h+":6299/roo/v1/status", nil)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
+		defer cancel()
+		r = r.WithContext(ctx)
+		client := &http.Client{}
+		resp, err := client.Do(r)
+		if err != nil {
+			fmt.Println(err) //TODO: Change
+		} else {
+			defer resp.Body.Close()
+			body, _ := ioutil.ReadAll(resp.Body)
+			fmt.Println("response Body:", string(body), i)
+		}
+
+		// var jsonStr = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
+		// req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+		// req.Header.Set("X-Custom-Header", "myvalue")
+		// req.Header.Set("Content-Type", "application/json")
+		// fmt.Println("response Status:", resp.Status)
+		// fmt.Println("response Headers:", resp.Header)
+		//
+		//Requested party runs rs, err = nh.SyncRequestAddNode(ctx, exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
+		//
+		//Requester then runs StartOnDiskCluster
+	}
 
 	//Bootstrap
-	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)
+	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)?
 	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
 	alreadyJoined := false
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {

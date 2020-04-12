@@ -114,6 +114,107 @@ func main() {
 	//////////////////////////////////////// SETUP CONFIG VARIABLES
 	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
 
+	//////////////////////////////////////// MAX CHANNELS
+	connc := make(chan struct{}, configuration.MaximumConnections)
+	for i := 0; i < configuration.MaximumConnections; i++ {
+		connc <- struct{}{}
+	}
+
+	//////////////////////////////////////// MAX CALLS
+	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
+		c := cache.New(24*time.Hour, 10*time.Minute)
+		configuration.ProxyDailyLimitCheck = func(ip string) uint64 {
+			var total uint64
+			if temp, found := c.Get(ip); found {
+				total = temp.(uint64)
+			}
+			total = total + 1 //Just by checking it we increment
+			c.Set(ip, total, cache.DefaultExpiration)
+			return total
+		}
+	}
+
+	/// API Must load before everything else so we can get status updates
+	//////////////////////////////////////// API ON :6299 (by default)
+	rtr := mux.NewRouter()
+	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
+	rtr.HandleFunc("/roo/"+apiVersion, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		w.Header().Set("access-control-allow-credentials", "true")
+		w.Header().Set("access-control-allow-headers", "Authorization,Accept,User")
+		w.Header().Set("access-control-allow-methods", "GET,POST,HEAD,PUT,DELETE")
+		w.Header().Set("access-control-max-age", "1728000")
+		w.WriteHeader(http.StatusOK)
+	}).Methods("OPTIONS")
+
+	//////////////////////////////////////// PING
+	rtr.HandleFunc("/roo/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		w.Write([]byte("PONG"))
+	}).Methods("GET")
+
+	//////////////////////////////////////// STATUS
+	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
+		json, _ := json.Marshal([8]map[string]interface{}{
+			{"client": getIP(r)},
+			{"binding": configuration.Cluster.Binding},
+			{"conns": configuration.MaximumConnections - len(connc)},
+			{"id": configuration.Cluster.NodeID},
+			{"group": configuration.Cluster.Group},
+			{"hosts": configuration.Cluster.Service.Hosts},
+			{"instantiated": configuration.Cluster.Service.Instantiated},
+			{"started": configuration.Cluster.Service.Started},
+		})
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(json)
+	}).Methods("GET")
+
+	//////////////////////////////////////// GET KV
+	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_GET_KV,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("GET")
+	//////////////////////////////////////// PUT KV
+	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}/{value: .*}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: WRITE_PUT_KV,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("PUT")
+	//API INTERNAL
+	go http.ListenAndServe(API_PORT, rtr)
+
 	//////////////////////////////////////// LOAD CLUSTER
 	{
 		s := &configuration.Cluster
@@ -203,26 +304,6 @@ func main() {
 	// THE APP BEGINS HERE IN ERNEST
 	//**************************************
 
-	//////////////////////////////////////// MAX CHANNELS
-	connc := make(chan struct{}, configuration.MaximumConnections)
-	for i := 0; i < configuration.MaximumConnections; i++ {
-		connc <- struct{}{}
-	}
-
-	//////////////////////////////////////// MAX CALLS
-	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
-		c := cache.New(24*time.Hour, 10*time.Minute)
-		configuration.ProxyDailyLimitCheck = func(ip string) uint64 {
-			var total uint64
-			if temp, found := c.Get(ip); found {
-				total = temp.(uint64)
-			}
-			total = total + 1 //Just by checking it we increment
-			c.Set(ip, total, cache.DefaultExpiration)
-			return total
-		}
-	}
-
 	//////////////////////////////////////// PROXY EVERYTHING
 	configuration.ProxyCache = cache.New(60*time.Second, 90*time.Second)
 	configuration.ProxySharedBufferPool = newBufferPool()
@@ -284,84 +365,6 @@ func main() {
 		}
 	})
 
-	//////////////////////////////////////// API ON :8080
-	rtr := mux.NewRouter()
-	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
-	rtr.HandleFunc("/roo/"+apiVersion, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-		w.Header().Set("access-control-allow-credentials", "true")
-		w.Header().Set("access-control-allow-headers", "Authorization,Accept,User")
-		w.Header().Set("access-control-allow-methods", "GET,POST,HEAD,PUT,DELETE")
-		w.Header().Set("access-control-max-age", "1728000")
-		w.WriteHeader(http.StatusOK)
-	}).Methods("OPTIONS")
-
-	//////////////////////////////////////// PING
-	rtr.HandleFunc("/roo/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-		w.Write([]byte("PONG"))
-	}).Methods("GET")
-
-	//////////////////////////////////////// STATUS
-	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
-		json, _ := json.Marshal([8]map[string]interface{}{
-			{"client": getIP(r)},
-			{"binding": configuration.Cluster.Binding},
-			{"conns": configuration.MaximumConnections - len(connc)},
-			{"id": configuration.Cluster.NodeID},
-			{"group": configuration.Cluster.Group},
-			{"hosts": configuration.Cluster.Service.Hosts},
-			{"instantiated": configuration.Cluster.Service.Instantiated},
-			{"started": configuration.Cluster.Service.Started},
-		})
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(json)
-	}).Methods("GET")
-
-	//////////////////////////////////////// GET KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
-		select {
-		case <-connc:
-			params := mux.Vars(r)
-			sargs := ServiceArgs{
-				ServiceType: SERVE_GET_KV,
-				Values:      &params,
-			}
-			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(err.Error()))
-			}
-			connc <- struct{}{}
-		default:
-			w.Header().Set("Retry-After", "1")
-			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
-		}
-	}).Methods("GET")
-	//////////////////////////////////////// PUT KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}/{value: .*}", func(w http.ResponseWriter, r *http.Request) {
-		select {
-		case <-connc:
-			params := mux.Vars(r)
-			sargs := ServiceArgs{
-				ServiceType: WRITE_PUT_KV,
-				Values:      &params,
-			}
-			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
-			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(err.Error()))
-			}
-			connc <- struct{}{}
-		default:
-			w.Header().Set("Retry-After", "1")
-			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
-		}
-	}).Methods("PUT")
-
 	//////////////////////////////////////// ACTUALLY RUN THE SERVICES
 	//TODO: Wait to start until nh is created from raft cluster
 	//Redirect HTTP->HTTPS
@@ -370,8 +373,7 @@ func main() {
 			http.Redirect(w, req, "https://"+getHost(req)+req.RequestURI, http.StatusFound)
 		}))
 	}()
-	//API INTERNAL
-	go http.ListenAndServe(API_PORT, rtr)
+
 	//Start the actual Proxy Service
 	log.Fatal(server.ListenAndServeTLS("", ""))
 
