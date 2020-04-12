@@ -105,6 +105,8 @@ type Cluster struct {
 type KvService struct { //Implements 'session'
 	Configuration *Service
 	nh            *dragonboat.NodeHost
+	Instantiated  int64
+	Started       int64
 	AppConfig     *Configuration
 }
 

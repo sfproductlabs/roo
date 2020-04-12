@@ -101,9 +101,9 @@ func main() {
 
 	////////////////////////////////////////RANDOM DELAY
 	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
-		setupSleep := rand.Intn(60)
+		setupSleep := rand.Intn(BOOTSTRAP_DELAY_MS)
 		fmt.Printf("[INFO] Sleeping this node for %d seconds to avoid cluster bootstrap race.\n", setupSleep)
-		time.Sleep(time.Duration(setupSleep) * time.Second)
+		time.Sleep(time.Duration(setupSleep) * time.Millisecond)
 	}
 
 	////////////////////////////////////////SETUP ORIGIN
@@ -122,6 +122,7 @@ func main() {
 			kv := KvService{
 				Configuration: s.Service,
 				AppConfig:     &configuration,
+				Instantiated:  time.Now().UnixNano(),
 			}
 			err = kv.connect()
 			if err != nil || s.Service.Session == nil {
@@ -304,13 +305,21 @@ func main() {
 
 	//////////////////////////////////////// STATUS
 	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
-		json, _ := json.Marshal([6]map[string]interface{}{
+		instantiated := int64(-1)
+		started := int64(-1)
+		if configuration.Cluster.Service.Session != nil {
+			instantiated = configuration.Cluster.Service.Session.(*KvService).Instantiated
+			started = configuration.Cluster.Service.Session.(*KvService).Started
+		}
+		json, _ := json.Marshal([8]map[string]interface{}{
 			{"client": getIP(r)},
 			{"binding": configuration.Cluster.Binding},
 			{"conns": configuration.MaximumConnections - len(connc)},
 			{"id": configuration.Cluster.NodeID},
 			{"group": configuration.Cluster.Group},
 			{"hosts": configuration.Cluster.Service.Hosts},
+			{"instantiated": instantiated},
+			{"started": started},
 		})
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)

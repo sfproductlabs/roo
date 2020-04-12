@@ -2,11 +2,11 @@ package main
 
 //////////////////////////////////////// Constants
 const (
-	ENV_ROO_DNS string = "ROO_DNS"
-
-	PONG              string = "pong"
-	API_LIMIT_REACHED string = "API Limit Reached"
-	HOST_NOT_FOUND    string = "Host Not Found"
+	ENV_ROO_DNS        string = "ROO_DNS"
+	BOOTSTRAP_DELAY_MS int    = 10000 //In milliseconds
+	PONG               string = "pong"
+	API_LIMIT_REACHED  string = "API Limit Reached"
+	HOST_NOT_FOUND     string = "Host Not Found"
 
 	MEMORY_CHECKER    string = "memory"
 	SERVICE_TYPE_NATS string = "nats"
