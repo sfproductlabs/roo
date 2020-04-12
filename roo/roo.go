@@ -119,10 +119,10 @@ func main() {
 		s := &configuration.Cluster
 		switch s.Service.Service {
 		case SERVICE_TYPE_KV:
+			s.Service.Instantiated = time.Now().UnixNano()
 			kv := KvService{
 				Configuration: s.Service,
 				AppConfig:     &configuration,
-				Instantiated:  time.Now().UnixNano(),
 			}
 			err = kv.connect()
 			if err != nil || s.Service.Session == nil {
@@ -305,12 +305,6 @@ func main() {
 
 	//////////////////////////////////////// STATUS
 	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
-		instantiated := int64(-1)
-		started := int64(-1)
-		if configuration.Cluster.Service.Session != nil {
-			instantiated = configuration.Cluster.Service.Session.(*KvService).Instantiated
-			started = configuration.Cluster.Service.Session.(*KvService).Started
-		}
 		json, _ := json.Marshal([8]map[string]interface{}{
 			{"client": getIP(r)},
 			{"binding": configuration.Cluster.Binding},
@@ -318,8 +312,8 @@ func main() {
 			{"id": configuration.Cluster.NodeID},
 			{"group": configuration.Cluster.Group},
 			{"hosts": configuration.Cluster.Service.Hosts},
-			{"instantiated": instantiated},
-			{"started": started},
+			{"instantiated": configuration.Cluster.Service.Instantiated},
+			{"started": configuration.Cluster.Service.Started},
 		})
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)

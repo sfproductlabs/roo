@@ -91,7 +91,9 @@ type Service struct {
 	Ephemeral bool
 	Note      string
 
-	Session session
+	Session      session
+	Instantiated int64
+	Started      int64
 }
 
 type Cluster struct {
@@ -105,8 +107,6 @@ type Cluster struct {
 type KvService struct { //Implements 'session'
 	Configuration *Service
 	nh            *dragonboat.NodeHost
-	Instantiated  int64
-	Started       int64
 	AppConfig     *Configuration
 }
 
