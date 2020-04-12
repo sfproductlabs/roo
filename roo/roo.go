@@ -102,7 +102,7 @@ func main() {
 	////////////////////////////////////////RANDOM DELAY
 	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
 		setupSleep := rand.Intn(BOOTSTRAP_DELAY_MS)
-		fmt.Printf("[INFO] Sleeping this node for %d seconds to avoid cluster bootstrap race.\n", setupSleep)
+		fmt.Printf("[INFO] Sleeping this node for %d milliseconds to avoid cluster bootstrap race.\n", setupSleep)
 		time.Sleep(time.Duration(setupSleep) * time.Millisecond)
 	}
 
