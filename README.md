@@ -14,6 +14,7 @@ com.roo.routes:<host:port>,<host:port>;<host:port>,<host:port>
 ```
 [ ] Autoscale Docker
 [ ] Autoscale Physical Infratructure
+[ ] Move flaoting IPs (Load balance, service down)
 [ ] SSL in API
 [ ] HTTP for Proxying (Only SSL Supported atm)
 [ ] Auto downgrade 
