@@ -34,6 +34,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 			fmt.Println("Could not route from %s to %s, bad destination", r.Host, string(dest))
 		}
 		director := func(req *http.Request) {
+			req.Header.Add("X-Forwarded-For", req.Header.Get("X-Forwarded-For"))
 			req.Header.Add("X-Forwarded-Host", req.Host)
 			req.Header.Add("X-Origin-Host", destination.Host)
 			if configuration.ProxyForceJson {

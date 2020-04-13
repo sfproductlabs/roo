@@ -276,6 +276,8 @@ func (kvs *KvService) connect() error {
 
 			}
 		}()
+	} else {
+		kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 	}
 	return nil
 }

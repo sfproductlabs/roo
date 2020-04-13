@@ -5,9 +5,7 @@ Bouncy bouncy bounce
 ## KV Store
 
 ```
-com.roo.clusters:<clusterid:uint64>/nodes/<nodeid:uint64>/ip
-com.roo.clusters:<clusterid:uint64>/hosts/<ip:[]string>
-com.roo.routes:<host:port>,<host:port>;<host:port>,<host:port>
+com.roo.host:<host>  <host:port>
 ```
 
 ## TODO
