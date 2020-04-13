@@ -256,7 +256,7 @@ func (kvs *KvService) connect() error {
 	//Leader finally adds themselves to kv store
 	if !alreadyJoined {
 		go func() {
-			time.Sleep(time.Duration(2) * time.Second)
+			time.Sleep(time.Duration(2) * time.Second) //Usually takes a few seconds for cluster to be ready
 			for {
 				time.Sleep(time.Duration(1) * time.Second)
 				action := &KVAction{
