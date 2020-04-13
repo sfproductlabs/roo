@@ -15,11 +15,11 @@ import (
 // Get the system setup from the config.json file:
 ////////////////////////////////////////
 type session interface {
-	connect() error
-	close() error
-	write(w *WriteArgs) error
-	listen() error
-	serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error
+	connect() error                                                      //Connect/open the service session
+	close() error                                                        //Close the service session
+	write(w *WriteArgs) error                                            //Writes is for one way outbound - require no feedback and are ultra fast
+	listen() error                                                       //Listen is for one way inbound
+	serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error //Serve is for bidirectional comms
 }
 
 type KeyValue struct {

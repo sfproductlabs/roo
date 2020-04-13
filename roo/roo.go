@@ -146,14 +146,12 @@ func main() {
 		w.Header().Set("access-control-max-age", "1728000")
 		w.WriteHeader(http.StatusOK)
 	}).Methods("OPTIONS")
-
 	//////////////////////////////////////// PING
 	rtr.HandleFunc("/roo/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		w.Write([]byte("PONG"))
 	}).Methods("GET")
-
 	//////////////////////////////////////// STATUS
 	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
 		status := &ClusterStatus{
@@ -172,13 +170,13 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(json)
 	}).Methods("GET")
-	//////////////////////////////////////// PUT KV
+	//////////////////////////////////////// JOIN
 	rtr.HandleFunc("/roo/"+apiVersion+"/join", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
 			sargs := ServiceArgs{
-				ServiceType: WRITE_PUT_KV,
+				ServiceType: SERVE_POST_JOIN,
 				Values:      &params,
 			}
 			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
@@ -192,6 +190,66 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	}).Methods("POST")
+	//////////////////////////////////////// REMOVE NODE
+	rtr.HandleFunc("/roo/"+apiVersion+"/remove", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_POST_REMOVE,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("POST")
+	//////////////////////////////////////// RESCUE (REMOVE ALL NODES)
+	rtr.HandleFunc("/roo/"+apiVersion+"/rescue", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_POST_RESCUE,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("POST")
+	//////////////////////////////////////// SCAN KV
+	rtr.HandleFunc("/roo/"+apiVersion+"/kvs/{key}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_GET_KVS,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("GET")
 	//////////////////////////////////////// GET KV
 	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
 		select {
@@ -218,7 +276,7 @@ func main() {
 		case <-connc:
 			params := mux.Vars(r)
 			sargs := ServiceArgs{
-				ServiceType: WRITE_PUT_KV,
+				ServiceType: SERVE_PUT_KV,
 				Values:      &params,
 			}
 			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
@@ -233,6 +291,7 @@ func main() {
 		}
 	}).Methods("PUT")
 	//API INTERNAL
+	//TODO: ADD SSL SUPPORT
 	go http.ListenAndServe(API_PORT, rtr)
 
 	//////////////////////////////////////// LOAD CLUSTER
@@ -318,11 +377,6 @@ func main() {
 		}
 
 	}
-
-	/////////////////////////////////////////
-	//**************************************
-	// THE APP BEGINS HERE IN ERNEST
-	//**************************************
 
 	//////////////////////////////////////// PROXY EVERYTHING
 	configuration.ProxyCache = cache.New(60*time.Second, 90*time.Second)

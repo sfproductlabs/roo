@@ -23,10 +23,13 @@ const (
 
 //Service calls
 const (
-	SERVE_GET_PING  = iota
-	SERVE_GET_KV    = iota
-	SERVE_POST_JOIN = iota
-	WRITE_PUT_KV    = iota
+	SERVE_GET_PING    = iota
+	SERVE_GET_KV      = iota
+	SERVE_PUT_KV      = iota
+	SERVE_GET_KVS     = iota
+	SERVE_POST_JOIN   = iota
+	SERVE_POST_REMOVE = iota
+	SERVE_POST_RESCUE = iota
 
 	//CONSUME
 	SERVE_GET_PING_DESC = "getPing"

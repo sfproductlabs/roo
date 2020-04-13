@@ -21,6 +21,7 @@ import (
 
 // ErrCacheMiss is returned when a certificate is not found in cache.
 var ErrCacheMiss = errors.New("Cache miss")
+var CachePrefix = "com.roo.cache:"
 
 // Get reads a certificate data from the specified kv.
 func (kvs KvService) get(ctx context.Context, name string, prefix string) ([]byte, error) {
@@ -57,15 +58,15 @@ func (kvs KvService) delete(ctx context.Context, name string, prefix string) err
 
 // Get reads a certificate data from the specified kv.
 func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
-	return kvs.get(ctx, name, "com.roo.cache:")
+	return kvs.get(ctx, name, CachePrefix)
 }
 
 // Put writes the certificate data to the specified kv.
 func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
-	return kvs.put(ctx, name, "com.roo.cache:", data)
+	return kvs.put(ctx, name, CachePrefix, data)
 }
 
 // Delete removes the specified kv.
 func (kvs KvService) Delete(ctx context.Context, name string) error {
-	return kvs.delete(ctx, name, "com.roo.cache:")
+	return kvs.delete(ctx, name, CachePrefix)
 }

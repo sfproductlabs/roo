@@ -290,6 +290,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 	// }
 }
 
+//////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
 	switch s.ServiceType {
 	case SERVE_GET_PING:
@@ -297,6 +298,11 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		(*w).Header().Set("Content-Type", "application/json")
 		(*w).WriteHeader(http.StatusOK)
 		(*w).Write(json)
+		return nil
+	case SERVE_PUT_KV:
+		//ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		//v["data"]?
+
 		return nil
 	case SERVE_POST_JOIN:
 		//check the key first, if identical do nothing
@@ -312,16 +318,11 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 
 }
 
-//////////////////////////////////////// C*
+//////////////////////////////////////// WRITES REQUIRE NO FEEDBACK AND ARE ULTRA FAST
 func (kvs *KvService) write(w *WriteArgs) error {
 	err := fmt.Errorf("Could not write to any kv server in cluster")
 	//v := *w.Values
 	switch w.WriteType {
-	case WRITE_PUT_KV:
-		//ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		//v["data"]?
-
-		return err
 	default:
 		//TODO: Manually run query via query in config.json
 		if kvs.AppConfig.Debug {
