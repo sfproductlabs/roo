@@ -157,3 +157,14 @@ type Configuration struct {
 	IgnoreQueryParamsKey     string
 	AccountHashMixer         string
 }
+
+type ClusterStatus struct {
+	Client       string
+	Binding      string
+	Conns        int
+	NodeID       uint64
+	Group        uint64
+	Hosts        []string
+	Instantiated int64
+	Started      int64
+}

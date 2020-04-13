@@ -49,6 +49,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -61,6 +62,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -73,10 +75,6 @@ import (
 // Interface Implementations
 ////////////////////////////////////////
 type RequestType uint64
-
-var (
-	rlog = logger.GetLogger("roo")
-)
 
 //////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs
@@ -155,45 +153,110 @@ func (kvs *KvService) connect() error {
 	if err != nil {
 		panic(err)
 	}
-	//TODO: Join
+
+	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
+	initialMembers := map[uint64]string{}
+	oldest := true
+	oldestConfirmed := true
+	alreadyJoined := false
+	waited := 0
 	//Join existing nodes before bootstrapping
 	//Request /roo/api/v1/join from other nodes
-	for i, h := range kvs.Configuration.Hosts {
 
-		r, _ := http.NewRequest("GET", "http://"+h+":6299/roo/v1/status", nil)
-		ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
-		defer cancel()
-		r = r.WithContext(ctx)
-		client := &http.Client{}
-		resp, err := client.Do(r)
-		if err != nil {
-			fmt.Println(err) //TODO: Change
-		} else {
-			defer resp.Body.Close()
-			body, _ := ioutil.ReadAll(resp.Body)
-			fmt.Println("response Body:", string(body), i)
+	for {
+
+		for _, h := range kvs.Configuration.Hosts {
+			if h == kvs.AppConfig.Cluster.Binding {
+				continue
+			}
+			r, err := http.NewRequest("GET", "http://"+h+":6299/roo/"+apiVersion+"/status", nil) //TODO: https
+			if err != nil {
+				rlog.Infof("Bad request to peer (request) %s, %s : %s", h, err)
+				continue
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
+			defer cancel()
+			r = r.WithContext(ctx)
+			client := &http.Client{}
+			resp, err := client.Do(r)
+			if err != nil {
+				rlog.Infof("Could not connect to peer %s, %s", h, err)
+				oldestConfirmed = false
+				continue
+			} else {
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					rlog.Infof("Bad response from peer (body) %s, %s : %s", h, err)
+					continue
+				}
+				status := &ClusterStatus{}
+				if err := json.Unmarshal(body, status); err != nil {
+					rlog.Infof("Bad response from peer (json) %s, %s : %s", h, body, err)
+					oldestConfirmed = false
+					continue
+				}
+				if status.Instantiated == kvs.AppConfig.Cluster.Service.Instantiated {
+					fmt.Println("[ERROR] Shutting down instance to avoid contention.") //Will auto restart in swarm
+					os.Exit(1)
+				}
+				if status.Instantiated < kvs.AppConfig.Cluster.Service.Instantiated {
+					oldest = false
+				}
+				if status.Started > 0 {
+					cs := &ClusterStatus{
+						NodeID:  kvs.AppConfig.Cluster.NodeID,
+						Group:   kvs.AppConfig.Cluster.Group,
+						Binding: kvs.AppConfig.Cluster.Binding,
+					}
+					if csdata, err := json.Marshal(cs); err != nil {
+						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
+						continue
+					} else {
+						req, err := http.NewRequest("POST", "http://"+h+":6299/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+						if err != nil {
+							rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+							continue
+						}
+						_, err = (&http.Client{}).Do(req)
+						if err == nil {
+							initialMembers[status.NodeID] = status.Binding + KV_PORT
+							alreadyJoined = true
+						}
+					}
+				}
+			}
 		}
+		waited = waited + 1
+		if alreadyJoined {
+			break
+		}
+		if oldest && oldestConfirmed {
+			alreadyJoined = false
+			break
+		}
+		if waited >= BOOTSTRAP_WAIT_S {
+			if oldest {
+				alreadyJoined = false
+			}
+			break
+		}
+		fmt.Printf("Attempting to initiate cluster... Waited %d of %d seconds/n", waited, BOOTSTRAP_WAIT_S)
+		time.Sleep(time.Duration(1) * time.Second)
+	}
 
-		// var jsonStr = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
-		// req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-		// req.Header.Set("X-Custom-Header", "myvalue")
-		// req.Header.Set("Content-Type", "application/json")
-		// fmt.Println("response Status:", resp.Status)
-		// fmt.Println("response Headers:", resp.Header)
-		//
-		//Requested party runs rs, err = nh.SyncRequestAddNode(ctx, exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
-		//
-		//Requester then runs StartOnDiskCluster
+	if len(initialMembers) == 0 {
+		initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
+		alreadyJoined = false
 	}
 
 	//Bootstrap
 	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)?
-	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
-	alreadyJoined := false
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
+		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}
+	kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 	kvs.nh = nh
 	kvs.Configuration.Session = kvs
 	return nil
@@ -235,6 +298,14 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		(*w).WriteHeader(http.StatusOK)
 		(*w).Write(json)
 		return nil
+	case SERVE_POST_JOIN:
+		//check the key first, if identical do nothing
+		//if old, remove the old worker, then add node
+		//
+		//Requested party runs rs, err = nh.SyncRequestAddNode(ctx, exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
+		//
+		//Requester then runs StartOnDiskCluster
+		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
 	default:
 		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
 	}

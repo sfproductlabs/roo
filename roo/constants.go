@@ -1,9 +1,12 @@
 package main
 
+import "github.com/lni/dragonboat/v3/logger"
+
 //////////////////////////////////////// Constants
 const (
 	ENV_ROO_DNS        string = "ROO_DNS"
-	BOOTSTRAP_DELAY_MS int    = 10000 //In milliseconds
+	BOOTSTRAP_DELAY_MS int    = 7000 //In milliseconds
+	BOOTSTRAP_WAIT_S   int    = 7
 	PONG               string = "pong"
 	API_LIMIT_REACHED  string = "API Limit Reached"
 	HOST_NOT_FOUND     string = "Host Not Found"
@@ -20,9 +23,10 @@ const (
 
 //Service calls
 const (
-	SERVE_GET_PING = iota      //1
-	SERVE_GET_KV   = 1 << iota //2 etc.
-	WRITE_PUT_KV   = 1 << iota
+	SERVE_GET_PING  = iota
+	SERVE_GET_KV    = iota
+	SERVE_POST_JOIN = iota
+	WRITE_PUT_KV    = iota
 
 	//CONSUME
 	SERVE_GET_PING_DESC = "getPing"
@@ -30,4 +34,8 @@ const (
 
 	//NOTIFY ONLY
 	WRITE_PUT_KV_DESC = "putKV"
+)
+
+var (
+	rlog = logger.GetLogger("roo")
 )

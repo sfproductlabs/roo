@@ -20,10 +20,10 @@ import (
 )
 
 // ErrCacheMiss is returned when a certificate is not found in cache.
-var ErrCacheMiss = errors.New("acme/autocert: certificate cache miss")
+var ErrCacheMiss = errors.New("Cache miss")
 
 // Get reads a certificate data from the specified kv.
-func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
+func (kvs KvService) get(ctx context.Context, name string, prefix string) ([]byte, error) {
 	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(name))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "SyncRead returned error %v\n", err)
@@ -35,7 +35,7 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 }
 
 // Put writes the certificate data to the specified kv.
-func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
+func (kvs KvService) put(ctx context.Context, name string, prefix string, data []byte) error {
 	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
 	kv := &KVAction{
 		Key: name,
@@ -50,7 +50,22 @@ func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 }
 
 // Delete removes the specified kv.
-func (kvs KvService) Delete(ctx context.Context, name string) error {
+func (kvs KvService) delete(ctx context.Context, name string, prefix string) error {
 	fmt.Fprintf(os.Stdout, "[kvcache] Delete not implemented\n")
 	return nil
+}
+
+// Get reads a certificate data from the specified kv.
+func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
+	return kvs.get(ctx, name, "com.roo.cache:")
+}
+
+// Put writes the certificate data to the specified kv.
+func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
+	return kvs.put(ctx, name, "com.roo.cache:", data)
+}
+
+// Delete removes the specified kv.
+func (kvs KvService) Delete(ctx context.Context, name string) error {
+	return kvs.delete(ctx, name, "com.roo.cache:")
 }

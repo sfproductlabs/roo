@@ -156,22 +156,42 @@ func main() {
 
 	//////////////////////////////////////// STATUS
 	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
-		json, _ := json.Marshal([8]map[string]interface{}{
-			{"client": getIP(r)},
-			{"binding": configuration.Cluster.Binding},
-			{"conns": configuration.MaximumConnections - len(connc)},
-			{"id": configuration.Cluster.NodeID},
-			{"group": configuration.Cluster.Group},
-			{"hosts": configuration.Cluster.Service.Hosts},
-			{"instantiated": configuration.Cluster.Service.Instantiated},
-			{"started": configuration.Cluster.Service.Started},
-		})
+		status := &ClusterStatus{
+			Client:       getIP(r),
+			Binding:      configuration.Cluster.Binding,
+			Conns:        configuration.MaximumConnections - len(connc),
+			NodeID:       configuration.Cluster.NodeID,
+			Group:        configuration.Cluster.Group,
+			Hosts:        configuration.Cluster.Service.Hosts,
+			Instantiated: configuration.Cluster.Service.Instantiated,
+			Started:      configuration.Cluster.Service.Started,
+		}
+		json, _ := json.Marshal(status)
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(json)
 	}).Methods("GET")
-
+	//////////////////////////////////////// PUT KV
+	rtr.HandleFunc("/roo/"+apiVersion+"/join", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: WRITE_PUT_KV,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("POST")
 	//////////////////////////////////////// GET KV
 	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
 		select {
