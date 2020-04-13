@@ -22,7 +22,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 	//Then check the kv-cluster
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
 	defer cancel()
-	if dest, err := configuration.Cluster.Service.Session.(*KvService).get(ctx, r.Host, "com.roo.domain:"); err != nil || dest == nil {
+	if dest, err := configuration.Cluster.Service.Session.(*KvService).Get(ctx, HOST_PREFIX+r.Host); err != nil || dest == nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(HOST_NOT_FOUND))
 	} else {

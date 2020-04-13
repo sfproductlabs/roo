@@ -37,21 +37,6 @@ import (
 	sm "github.com/lni/dragonboat/v3/statemachine"
 )
 
-const (
-	appliedIndexKey    string = "disk_kv_applied_index"
-	testDBDirName      string = "cluster-data"
-	currentDBFilename  string = "current"
-	updatingDBFilename string = "current.updating"
-)
-
-const (
-	PUT    string = "PUT"
-	GET    string = "GET"
-	DELETE string = "DELETE"
-	UPDATE string = "UPDATE"
-	SCAN   string = "SCAN"
-)
-
 func syncDir(dir string) (err error) {
 	if runtime.GOOS == "windows" {
 		return nil
@@ -73,12 +58,6 @@ func syncDir(dir string) (err error) {
 		}
 	}()
 	return df.Sync()
-}
-
-type KVAction struct {
-	Action string
-	Key    string
-	Val    string
 }
 
 // rocksdb is a wrapper to ensure lookup() and close() can be concurrently
@@ -399,11 +378,18 @@ func (d *DiskKV) Open(stopc <-chan struct{}) (uint64, error) {
 
 // Lookup queries the state machine.
 func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
-	dataKV := &KVAction{ //Set the deafult lookup to a byte query
-		Action: GET,
-		Key:    string(cmd.([]byte)),
+	dataKV := &KVAction{} //Set the deafult lookup to a byte query
+	if c, ok := cmd.(string); ok {
+		dataKV.Action = GET
+		dataKV.Key = c
 	}
-	json.Unmarshal(cmd.([]byte), dataKV) //Ignore any errors
+	if c, ok := cmd.([]byte); ok {
+		dataKV.Action = GET
+		json.Unmarshal(c, dataKV) //Ignore any errors
+	}
+	if c, ok := cmd.(*KVAction); ok {
+		dataKV = c
+	}
 	switch dataKV.Action {
 	case SCAN:
 		return d.Scan(dataKV.Key)
@@ -416,7 +402,15 @@ func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
 func (d *DiskKV) Get(key interface{}) (interface{}, error) {
 	db := (*rocksdb)(atomic.LoadPointer(&d.db))
 	if db != nil {
-		v, err := db.lookup(key.([]byte))
+		var kb []byte
+		if k, ok := key.([]byte); ok {
+			kb = k
+		} else if k, ok := key.(string); ok {
+			kb = []byte(k)
+		} else {
+			return nil, fmt.Errorf("[ERROR] Unsupported query type for key: %s", key)
+		}
+		v, err := db.lookup(kb)
 		if err == nil && d.closed {
 			panic("lookup returned valid result when DiskKV is already closed")
 		}
@@ -540,7 +534,7 @@ func (d *DiskKV) saveToWriter(db *rocksdb,
 		val := iter.Value()
 		dataKv := &KVAction{
 			Key: string(key.Data()),
-			Val: string(val.Data()),
+			Val: val.Data(),
 		}
 		data, err := json.Marshal(dataKv)
 		if err != nil {

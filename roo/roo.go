@@ -231,7 +231,7 @@ func main() {
 		}
 	}).Methods("POST")
 	//////////////////////////////////////// SCAN KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kvs/{key}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+apiVersion+"/kvs{key:.*}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -271,7 +271,7 @@ func main() {
 		}
 	}).Methods("GET")
 	//////////////////////////////////////// PUT KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}/{value: .*}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)

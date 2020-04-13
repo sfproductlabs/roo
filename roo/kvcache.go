@@ -15,58 +15,40 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 )
 
 // ErrCacheMiss is returned when a certificate is not found in cache.
 var ErrCacheMiss = errors.New("Cache miss")
-var CachePrefix = "com.roo.cache:"
 
 // Get reads a certificate data from the specified kv.
-func (kvs KvService) get(ctx context.Context, name string, prefix string) ([]byte, error) {
+func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(name))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "SyncRead returned error %v\n", err)
+		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
 	} else {
-		fmt.Fprintf(os.Stdout, "query key: %s, result: %s\n", name, result)
+		rlog.Infof("[GET] Cache query key: %s, result: %s\n", name, result)
 		return result.([]byte), nil
 	}
 }
 
 // Put writes the certificate data to the specified kv.
-func (kvs KvService) put(ctx context.Context, name string, prefix string, data []byte) error {
+func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
 	kv := &KVAction{
 		Key: name,
-		Val: string(data),
+		Val: data,
 	}
 	kvdata, err := json.Marshal(kv)
 	if err != nil {
-		panic(err)
+		rlog.Errorf("[PUT] Cache key: %s, error: %v", kv.Key, err)
 	}
 	_, err = kvs.nh.SyncPropose(ctx, cs, kvdata)
 	return err
 }
 
 // Delete removes the specified kv.
-func (kvs KvService) delete(ctx context.Context, name string, prefix string) error {
-	fmt.Fprintf(os.Stdout, "[kvcache] Delete not implemented\n")
-	return nil
-}
-
-// Get reads a certificate data from the specified kv.
-func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
-	return kvs.get(ctx, name, CachePrefix)
-}
-
-// Put writes the certificate data to the specified kv.
-func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
-	return kvs.put(ctx, name, CachePrefix, data)
-}
-
-// Delete removes the specified kv.
 func (kvs KvService) Delete(ctx context.Context, name string) error {
-	return kvs.delete(ctx, name, CachePrefix)
+	rlog.Warningf("[kvcache] Delete not implemented\n")
+	return nil
 }

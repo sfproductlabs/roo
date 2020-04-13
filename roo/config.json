@@ -7,6 +7,7 @@
     "MaximumConnections": 150000,
     "ReadTimeoutSeconds": 20,
     "ReadHeaderTimeoutSeconds": 20,
+    "ScanDockerSwarmSeconds": 30,
     "WriteTimeoutSeconds": 20,
     "IdleTimeoutSeconds": 20,
     "MaxHeaderBytes": 1048576,

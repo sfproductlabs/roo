@@ -71,11 +71,6 @@ import (
 	"github.com/lni/dragonboat/v3/logger"
 )
 
-////////////////////////////////////////
-// Interface Implementations
-////////////////////////////////////////
-type RequestType uint64
-
 //////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs
 func (kvs *KvService) connect() error {
@@ -256,9 +251,32 @@ func (kvs *KvService) connect() error {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}
-	kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 	kvs.nh = nh
 	kvs.Configuration.Session = kvs
+	//Leader finally adds themselves to kv store
+	if !alreadyJoined {
+		go func() {
+			time.Sleep(time.Duration(2) * time.Second)
+			for {
+				time.Sleep(time.Duration(1) * time.Second)
+				action := &KVAction{
+					Action: PUT,
+					Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
+					Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+				defer cancel()
+				if _, err := kvs.execute(ctx, action); err != nil {
+					rlog.Infof("Adding leader to kv didn't happen yet: %s\n", err)
+					continue
+				} else {
+					kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
+					break
+				}
+
+			}
+		}()
+	}
 	return nil
 }
 
@@ -275,43 +293,114 @@ func (i *KvService) listen() error {
 
 func (i *KvService) auth(s *ServiceArgs) error {
 	return fmt.Errorf("Not implemented")
-	// //TODO: AG implement JWT
-	// //TODO: AG implement creds (check domain level auth)
-	// if *s.Values == nil {
-	// 	return fmt.Errorf("User not provided")
-	// }
-	// uid := (*s.Values)["uid"]
-	// if uid == "" {
-	// 	return fmt.Errorf("User ID not provided")
-	// }
-	// password := (*s.Values)["password"]
-	// if password == "" {
-	// 	return fmt.Errorf("User pass not provided")
-	// }
 }
 
 //////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
+	defer cancel()
+	r = r.WithContext(ctx)
 	switch s.ServiceType {
-	case SERVE_GET_PING:
-		json, _ := json.Marshal(map[string]interface{}{"ping": (*s.Values)["pong"]})
-		(*w).Header().Set("Content-Type", "application/json")
-		(*w).WriteHeader(http.StatusOK)
-		(*w).Write(json)
+	//TODO
+	// SERVE_POST_REMOVE = iota
+	// SERVE_POST_RESCUE = iota
+	case SERVE_POST_JOIN:
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("Bad JS (body)")
+		}
+		if len(body) > 0 {
+			cs := &ClusterStatus{}
+			if err := json.Unmarshal(body, cs); err == nil {
+				//check the key first, if identical do nothing
+				nodestring := strconv.FormatUint(cs.NodeID, 10)
+				action := &KVAction{
+					Action: GET,
+					Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
+				}
+				if result, err := kvs.execute(r.Context(), action); err == nil {
+					if result != nil && string(result.([]byte)) != nodestring {
+						//if old/duplicate, remove the old worker, then add node
+						if oldnode, err := strconv.ParseUint(string(result.([]byte)), 10, 64); err == nil {
+							err = kvs.nh.SyncRequestDeleteNode(r.Context(), cs.Group, oldnode, 0)
+							rlog.Infof("[INFO] Pruned node %d: %v, %v", oldnode, cs, err)
+						}
+					}
+				}
+				err = kvs.nh.SyncRequestAddNode(r.Context(), cs.Group, cs.NodeID, cs.Binding+KV_PORT, 0)
+				rlog.Infof("[INFO] Node requested to join cluster: %v, errors: %v", cs, err)
+				if err != nil {
+					action = &KVAction{
+						Action: PUT,
+						Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
+						Val:    []byte(nodestring),
+					}
+					kvs.execute(r.Context(), action)
+					writer := *w
+					writer.WriteHeader(http.StatusOK)
+				} else {
+					writer := *w
+					writer.WriteHeader(http.StatusBadRequest)
+				}
+			} else {
+				return fmt.Errorf("Bad request (data)")
+			}
+		} else {
+			return fmt.Errorf("Bad request (body)")
+		}
+		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
+	case SERVE_GET_KV:
+		action := &KVAction{
+			Action: GET,
+			Key:    (*s.Values)["key"],
+		}
+		result, err := kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not get key in cluster: %s", err)
+		}
+		writer := *w
+		writer.WriteHeader(http.StatusOK)
+		writer.Write(result.([]byte))
+		return nil
+	case SERVE_GET_KVS:
+		action := &KVAction{
+			Action: SCAN,
+			Key:    (*s.Values)["key"],
+		}
+		if len(action.Key) > 0 && action.Key[0] == '/' {
+			action.Key = action.Key[1:]
+		}
+		result, err := kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not scan cluster: %s", err)
+		}
+		writer := *w
+		json, _ := json.Marshal(map[string]interface{}{"results": result, "query": action.Key}) //Use in javacript: window.atob to decode base64 into json/string if you saved it as that
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		writer.Write(json)
 		return nil
 	case SERVE_PUT_KV:
-		//ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		//v["data"]?
-
+		defer r.Body.Close()
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("Could not read posted value")
+		}
+		action := &KVAction{
+			Action: PUT,
+			Key:    (*s.Values)["key"],
+			Val:    data,
+		}
+		_, err = kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not write key to cluster: %s", err)
+		}
+		writer := *w
+		json, _ := json.Marshal(map[string]interface{}{"ok": true})
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		writer.Write(json)
 		return nil
-	case SERVE_POST_JOIN:
-		//check the key first, if identical do nothing
-		//if old, remove the old worker, then add node
-		//
-		//Requested party runs rs, err = nh.SyncRequestAddNode(ctx, exampleClusterID, nodeID, addr, 0, 3*time.Second), returns same as status
-		//
-		//Requester then runs StartOnDiskCluster
-		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
 	default:
 		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
 	}
@@ -326,10 +415,41 @@ func (kvs *KvService) write(w *WriteArgs) error {
 	default:
 		//TODO: Manually run query via query in config.json
 		if kvs.AppConfig.Debug {
-			fmt.Printf("UNHANDLED %s\n", w)
+			fmt.Printf("UNHANDLED WRITE %s\n", w)
 		}
 	}
 
 	//TODO: Retries
 	return err
+}
+
+func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{}, error) {
+	switch action.Action {
+	case SCAN:
+		result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+		if err != nil {
+			rlog.Errorf("SyncRead returned error %v\n", err)
+			return nil, err
+		} else {
+			rlog.Infof("[SCAN] Execute query key: %s\n", action.Key)
+			return result, nil
+		}
+	case GET:
+		result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+		if err != nil {
+			rlog.Errorf("SyncRead returned error %v\n", err)
+			return nil, err
+		} else {
+			rlog.Infof("[GET] Execute query key: %s\n", action.Key)
+			return result, nil
+		}
+	case PUT:
+		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
+		kvdata, err := json.Marshal(action)
+		if err != nil {
+			rlog.Errorf("[PUT] Execute key: %s, error: %v", action.Key, err)
+		}
+		return kvs.nh.SyncPropose(ctx, cs, kvdata)
+	}
+	return nil, fmt.Errorf("Method not implemented (execute) in kv %s", action.Action)
 }

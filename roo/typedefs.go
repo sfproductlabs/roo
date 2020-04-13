@@ -22,6 +22,12 @@ type session interface {
 	serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error //Serve is for bidirectional comms
 }
 
+type KVAction struct {
+	Action string
+	Key    string
+	Val    []byte
+}
+
 type KeyValue struct {
 	Key   string
 	Value interface{}
