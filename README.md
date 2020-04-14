@@ -1,6 +1,6 @@
 # Roo
 
-Bouncy bouncy bounce
+This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops.
 
 ## Distributed Key-Value (KV) Store (See the API below for access)
 
