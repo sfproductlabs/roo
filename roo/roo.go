@@ -134,20 +134,26 @@ func main() {
 		// 	log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
 		// }
 		// 	rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
-		ns := configuration.Cluster.Resolver + ":53"
+		target := "microsoft.com"
+		server := "8.8.8.8"
+
 		c := dns.Client{}
 		m := dns.Msg{}
-		m.SetQuestion(configuration.Cluster.DNS, dns.TypeA)
-		r, _, err := c.Exchange(&m, ns)
+		m.SetQuestion(target+".", dns.TypeA)
+		r, t, err := c.Exchange(&m, server+":53")
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Took %v", t)
+		if len(r.Answer) == 0 {
+			log.Fatal("No results")
+		}
+		for _, ans := range r.Answer {
+			Arecord := ans.(*dns.A)
+			configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, Arecord.A.String())
+		}
 		if err != nil {
 			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed, %v", err)
-		}
-		// Last CNAME
-		for _, ans := range r.Answer {
-			a, ok := ans.(*dns.A)
-			if ok {
-				configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, a.A.String())
-			}
 		}
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
