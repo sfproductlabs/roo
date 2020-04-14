@@ -40,8 +40,8 @@ curl -X GET http://localhost:6299/roo/v1/kvs/tes #Searches the prefix _tes_
 curl -X GET http://localhost:6299/roo/v1/kvs/test #Searches the prefix _test_
 curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv store (filter is on nothing)
 ```
-* Returns the rows searched using the SCAN query (in KV land its a prefix filter)
-* The results are in base64, so you may need to convert them (unlike the GET single query above)
+* Returns the rows searched using the SCAN query (in KV land its a prefix filter) in JSON
+* The resulting values are encoded in base64, so you may need to convert them (unlike the GET single query above which returns raw bytes)
 * Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
 
 ## TODO
