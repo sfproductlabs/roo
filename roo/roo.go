@@ -145,7 +145,7 @@ func main() {
 				d := net.Dialer{
 					Timeout: time.Millisecond * time.Duration(10000),
 				}
-				return d.DialContext(ctx, "tcp", configuration.Cluster.Resolver+":53")
+				return d.DialContext(ctx, "udp", configuration.Cluster.Resolver+":53")
 			},
 		}
 		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)

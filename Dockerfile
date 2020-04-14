@@ -54,7 +54,7 @@ ADD . /app/roo
 RUN bash -c 'rm /app/roo/temp.config.json || exit 0'
 
 ####################################################################################
-ENV GODEBUG="netdns=cgo"
+#ENV GODEBUG="netdns=cgo"
 # startup command
 CMD ["/usr/bin/nice", "-n", "5", "/app/roo/rood", "/app/roo/roo/config.json"] 
 # Can also clean logs > /dev/null 2>&1
