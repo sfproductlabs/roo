@@ -32,6 +32,8 @@ curl -X GET http://localhost:6299/roo/v1/kv/test
 ### Query the store (SCAN query)
 ```
 curl -X GET http://localhost:6299/roo/v1/kvs/te #Searches the prefix _te_
+curl -X GET http://localhost:6299/roo/v1/kvs/tes #Searches the prefix _tes_
+curl -X GET http://localhost:6299/roo/v1/kvs/test #Searches the prefix _test_
 curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything
 ```
 * Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
