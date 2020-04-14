@@ -55,6 +55,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -111,9 +112,31 @@ func main() {
 		time.Sleep(time.Duration(configuration.Cluster.StartDelaySeconds) * time.Second)
 	}
 
+	////////////////////////////////////////DNS QUERY
+	if configuration.Cluster.Resolver == "" {
+		rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
+		configuration.Cluster.Service.Hosts, _ = net.LookupHost(configuration.Cluster.DNS)
+	} else {
+		r := &net.Resolver{
+			PreferGo: false,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{
+					Timeout: time.Millisecond * time.Duration(10000),
+				}
+				return d.DialContext(ctx, "tcp", configuration.Cluster.Resolver+":53")
+			},
+		}
+		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
+		var err error
+		if configuration.Cluster.Service.Hosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
+			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed")
+		}
+	}
+	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
+
 	////////////////////////////////////////RANDOM DELAY
 	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
-		setupSleep := rand.Intn(BOOTSTRAP_DELAY_MS)
+		setupSleep := rand.Intn(BOOTSTRAP_DELAY_MS) + 3000
 		rlog.Infof("[INFO] Sleeping this node for %d milliseconds to avoid cluster bootstrap race.\n", setupSleep)
 		time.Sleep(time.Duration(setupSleep) * time.Millisecond)
 	}
