@@ -231,6 +231,7 @@ func (kvs *KvService) connect() error {
 									readyToJoin = true
 									break
 								}
+								rlog.Infof("Request to join failed, status-code: %d err: %v", resp.StatusCode, err)
 								if joinAttempts > BOOTSTRAP_WAIT_S {
 									fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
 									os.Exit(1)
