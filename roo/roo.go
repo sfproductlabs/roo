@@ -62,6 +62,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/miekg/dns"
 	"github.com/patrickmn/go-cache"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -72,7 +73,7 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 3")
+	fmt.Println("Roo. Version 4")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
@@ -114,44 +115,39 @@ func main() {
 
 	////////////////////////////////////////DNS QUERY
 	rlog.Infof("Cluster: Looking up hosts at: %s\n", configuration.Cluster.DNS)
-	// if configuration.Cluster.Resolver == "" {
-	// 	rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
-	// 	configuration.Cluster.Service.Hosts, _ = net.LookupHost(configuration.Cluster.DNS)
-	// } else {
-	// 	rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
-	// 	ns := configuration.Cluster.Resolver + ":53"
-	// 	c := dns.Client{}
-	// 	m := dns.Msg{}
-	// 	m.SetQuestion(configuration.Cluster.DNS, dns.TypeA)
-	// 	r, _, err := c.Exchange(&m, ns)
-	// 	if err != nil {
-	// 		log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed, %v", err)
-	// 	}
-	// 	// Last CNAME
-	// 	for _, ans := range r.Answer {
-	// 		a, ok := ans.(*dns.A)
-	// 		if ok {
-	// 			configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, a.A.String())
-	// 		}
-	// 	}
-	// }
 	if configuration.Cluster.Resolver == "" {
 		rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
 		configuration.Cluster.Service.Hosts, _ = net.LookupHost(configuration.Cluster.DNS)
 	} else {
-		r := &net.Resolver{
-			PreferGo: false,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{
-					Timeout: time.Millisecond * time.Duration(10000),
-				}
-				return d.DialContext(ctx, "udp", configuration.Cluster.Resolver+":53")
-			},
+		// r := &net.Resolver{
+		// 	PreferGo: false,
+		// 	Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+		// 		d := net.Dialer{
+		// 			Timeout: time.Millisecond * time.Duration(10000),
+		// 		}
+		// 		return d.DialContext(ctx, "udp", configuration.Cluster.Resolver+":53")
+		// 	},
+		// }
+		// rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
+		// var err error
+		// if configuration.Cluster.Service.Hosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
+		// 	log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
+		// }
+		// 	rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
+		ns := configuration.Cluster.Resolver + ":53"
+		c := dns.Client{}
+		m := dns.Msg{}
+		m.SetQuestion(configuration.Cluster.DNS, dns.TypeA)
+		r, _, err := c.Exchange(&m, ns)
+		if err != nil {
+			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed, %v", err)
 		}
-		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
-		var err error
-		if configuration.Cluster.Service.Hosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
-			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
+		// Last CNAME
+		for _, ans := range r.Answer {
+			a, ok := ans.(*dns.A)
+			if ok {
+				configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, a.A.String())
+			}
 		}
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
