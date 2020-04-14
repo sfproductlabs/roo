@@ -231,8 +231,7 @@ func (kvs *KvService) connect() error {
 							}
 							resp, err = (&http.Client{}).Do(req)
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-								initialMembers := map[uint64]string{}
-								initialMembers[status.NodeID] = status.Binding + KV_PORT
+								initialMembers = map[uint64]string{}
 								readyToJoin = true
 								break
 							}
