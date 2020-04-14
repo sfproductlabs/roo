@@ -14,7 +14,7 @@ Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below f
 ```
 com.roo.host:<requesting_host<:port (optional)>:scheme>  <destination_url>
 ```
-[See an example](#a-real-example)
+[See an example](https://github.com/sfproductlabs/roo/blob/master/README.md#a-real-example-route)
 
 ## API 
 ### Post a single key to the distributed store
