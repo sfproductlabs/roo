@@ -22,6 +22,8 @@ curl -X PUT -d'test data' http://localhost:6299/roo/v1/kv/test
 To test you can run something like this (this just makes your localhost pretend like its responding to a request to google.com):
 ```curl -H "Host: google.com" https://localhost:443/```
 
+So to summarize, google.com:443 is the incoming route to roo from the internet, and tasks.cool_game:9001 is your service and port to your internal service (in this case its an internal intranet _docker swarm_ service).
+
 ### Get a key from the store
 ```
 curl -X GET http://localhost:6299/roo/v1/kv/test
