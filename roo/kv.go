@@ -315,7 +315,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 
 //////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(10*time.Second))
 	defer cancel()
 	r = r.WithContext(ctx)
 	switch s.ServiceType {
@@ -353,9 +353,13 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 						Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
 						Val:    []byte(nodestring),
 					}
-					kvs.execute(r.Context(), action)
-					writer := *w
-					writer.WriteHeader(http.StatusOK)
+					if _, err = kvs.execute(r.Context(), action); err != nil {
+						return err
+					} else {
+						writer := *w
+						writer.WriteHeader(http.StatusOK)
+						return nil
+					}
 				} else {
 					return err
 				}
