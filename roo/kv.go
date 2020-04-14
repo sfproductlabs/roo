@@ -114,7 +114,7 @@ func (kvs *KvService) connect() error {
 	kvs.Configuration.Hosts = tmp
 	rlog.Infof("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
-	kvs.AppConfig.Cluster.NodeID = rand.Uint64()
+	kvs.AppConfig.Cluster.NodeID = uint64(rand.Intn(65534) + 1)
 
 	// https://github.com/golang/go/issues/17393
 	if runtime.GOOS == "darwin" {
@@ -198,6 +198,11 @@ func (kvs *KvService) connect() error {
 				}
 				initialMembers[status.NodeID] = status.Binding + KV_PORT
 				if status.Started > 0 {
+					//TODO:if Check to see if in bootstrap nodes
+					alreadyJoined = true
+					continue
+					//TODO:else
+					alreadyJoined = false
 					cs := &ClusterStatus{
 						NodeID:  kvs.AppConfig.Cluster.NodeID,
 						Group:   kvs.AppConfig.Cluster.Group,
@@ -238,7 +243,7 @@ func (kvs *KvService) connect() error {
 		}
 		if olderThan == len(kvs.Configuration.Hosts) {
 			rlog.Infof("[[OLDEST]]\n")
-			alreadyJoined = false
+			alreadyJoined = true
 			break
 		}
 		if waited >= BOOTSTRAP_WAIT_S {
@@ -249,16 +254,16 @@ func (kvs *KvService) connect() error {
 		time.Sleep(time.Duration(1) * time.Second)
 	}
 
-	if !alreadyJoined || len(initialMembers) == 0 {
-		initialMembers = map[uint64]string{}
-		alreadyJoined = false
-	}
+	// if !alreadyJoined || len(initialMembers) == 0 {
+	// 	initialMembers = map[uint64]string{}
+	// 	alreadyJoined = false
+	// }
 	//Add self to members
 	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 
 	//Begin cluster
 rejoin:
-	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
+	if err := nh.StartOnDiskCluster(initialMembers, !alreadyJoined, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v, members: %v\n", err, initialMembers)
 		if alreadyJoined {
 			time.Sleep(time.Duration(1) * time.Second)
