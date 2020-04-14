@@ -247,7 +247,7 @@ func (kvs *KvService) connect() error {
 			break
 		}
 		if waited >= BOOTSTRAP_WAIT_S {
-			fmt.Println("[ERROR] Could not confirm node is the oldest before time ran out")
+			fmt.Println("[ERROR] Could not confirm node is the oldest before time ran out.")
 			os.Exit(1)
 		}
 		rlog.Infof("Attempting to initiate cluster... Waited %d of %d seconds\n", waited, BOOTSTRAP_WAIT_S)
