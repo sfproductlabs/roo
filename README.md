@@ -3,8 +3,8 @@
 This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops.
 
 ## Getting Started
+* Run this on swarm and you're done (add the labels to your nodes you want to run it on)
 ```
-# docker stack rm roo
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
 
