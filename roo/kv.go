@@ -49,6 +49,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -151,7 +152,6 @@ func (kvs *KvService) connect() error {
 
 	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
 	initialMembers := map[uint64]string{}
-	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 	olderThan := 0
 	alreadyJoined := false
 	waited := 0
@@ -196,38 +196,37 @@ func (kvs *KvService) connect() error {
 				if status.Instantiated > kvs.AppConfig.Cluster.Service.Instantiated {
 					olderThan = olderThan + 1
 				}
+				initialMembers[status.NodeID] = status.Binding + KV_PORT
 				if status.Started > 0 {
 					cs := &ClusterStatus{
 						NodeID:  kvs.AppConfig.Cluster.NodeID,
 						Group:   kvs.AppConfig.Cluster.Group,
 						Binding: kvs.AppConfig.Cluster.Binding,
 					}
-					if _, err := json.Marshal(cs); err != nil {
+					if csdata, err := json.Marshal(cs); err != nil {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-						initialMembers[status.NodeID] = status.Binding + KV_PORT
-						alreadyJoined = true
-						// join_attempts := 0
-						// for {
-						// 	join_attempts = join_attempts + 1
-						// 	time.Sleep(time.Duration(1) * time.Second)
-						// 	req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
-						// 	if err != nil {
-						// 		rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
-						// 		continue
-						// 	}
-						// 	_, err = (&http.Client{}).Do(req)
-						// 	if err == nil {
-						// 		initialMembers[status.NodeID] = status.Binding + KV_PORT
-						// 		alreadyJoined = true
-						// 		break
-						// 	}
-						// 	if join_attempts > BOOTSTRAP_WAIT_S {
-						// 		fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
-						// 		os.Exit(1)
-						// 	}
-						// }
+						joinAttempts := 0
+						for {
+							joinAttempts = joinAttempts + 1
+							time.Sleep(time.Duration(1) * time.Second)
+							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+							if err != nil {
+								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+								continue
+							}
+							_, err = (&http.Client{}).Do(req)
+							if err == nil {
+								initialMembers[status.NodeID] = status.Binding + KV_PORT
+								alreadyJoined = true
+								break
+							}
+							if joinAttempts > BOOTSTRAP_WAIT_S {
+								fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
+								os.Exit(1)
+							}
+						}
 					}
 				}
 			}
@@ -250,12 +249,14 @@ func (kvs *KvService) connect() error {
 		time.Sleep(time.Duration(1) * time.Second)
 	}
 
-	if len(initialMembers) == 0 {
+	if !alreadyJoined || len(initialMembers) == 0 {
+		initialMembers = map[uint64]string{}
 		alreadyJoined = false
 	}
+	//Add self to members
+	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 
-	//Bootstrap
-	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)?
+	//Begin cluster
 rejoin:
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v, members: %v\n", err, initialMembers)
