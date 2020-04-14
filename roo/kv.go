@@ -316,7 +316,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 
 //////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(60*time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(30*time.Second))
 	defer cancel()
 	r = r.WithContext(ctx)
 	switch s.ServiceType {
@@ -331,6 +331,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		if len(body) > 0 {
 			cs := &ClusterStatus{}
 			if err := json.Unmarshal(body, cs); err == nil {
+				var rs *dragonboat.RequestState
 				//check the key first, if identical do nothing
 				nodestring := strconv.FormatUint(cs.NodeID, 10)
 				action := &KVAction{
@@ -341,28 +342,34 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 					if result != nil && string(result.([]byte)) != nodestring {
 						//if old/duplicate, remove the old worker, then add node
 						if oldnode, err := strconv.ParseUint(string(result.([]byte)), 10, 64); err == nil {
-							err = kvs.nh.SyncRequestDeleteNode(r.Context(), cs.Group, oldnode, 0)
+							rs, err = kvs.nh.RequestDeleteNode(cs.Group, oldnode, 0, 3*time.Second)
 							rlog.Infof("[INFO] Pruned node %d: %v, %v", oldnode, cs, err)
+							if err != nil {
+								return err
+							}
 						}
 					}
 				}
-				err = kvs.nh.SyncRequestAddNode(r.Context(), cs.Group, cs.NodeID, cs.Binding+KV_PORT, 0)
+				rs, err = kvs.nh.RequestAddNode(cs.Group, cs.NodeID, cs.Binding+KV_PORT, 0, 3*time.Second)
 				rlog.Infof("[INFO] Node requested to join cluster: %v, errors: %v", cs, err)
-				if err == nil {
-					action = &KVAction{
-						Action: PUT,
-						Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
-						Val:    []byte(nodestring),
-					}
-					if _, err = kvs.execute(r.Context(), action); err != nil {
-						return err
+				select {
+				case res := <-rs.CompletedC:
+					if res.Completed() {
+						action = &KVAction{
+							Action: PUT,
+							Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
+							Val:    []byte(nodestring),
+						}
+						if _, err := kvs.execute(r.Context(), action); err != nil {
+							return err
+						} else {
+							writer := *w
+							writer.WriteHeader(http.StatusOK)
+							return nil
+						}
 					} else {
-						writer := *w
-						writer.WriteHeader(http.StatusOK)
-						return nil
+						return fmt.Errorf("Membership add failed %s\n", err)
 					}
-				} else {
-					return err
 				}
 			} else {
 				return fmt.Errorf("Bad request (data)")
