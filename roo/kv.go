@@ -75,6 +75,7 @@ import (
 // Connect initiates the primary connection to the range of provided URLs
 func (kvs *KvService) connect() error {
 	kvs.Configuration.Hosts, _ = net.LookupHost(kvs.AppConfig.Cluster.DNS)
+	rlog.Infof("Cluster: Possible Roo IPs: %s\n", kvs.Configuration.Hosts)
 	myIPs, _ := getMyIPs(true)
 	rlog.Infof("Cluster: My IPs: %s\n", getIPsString(myIPs))
 	if kvs.AppConfig.Cluster.Binding != "" {
@@ -105,12 +106,13 @@ func (kvs *KvService) connect() error {
 	}
 
 	//Now exclude IPs from the hosts (ours or other IPv6)
+	tmp := kvs.Configuration.Hosts[:0]
 	for i := 0; i < len(kvs.Configuration.Hosts); i++ {
-		if kvs.Configuration.Hosts[i] == kvs.AppConfig.Cluster.Binding || net.ParseIP(kvs.Configuration.Hosts[i]) == nil || net.ParseIP(kvs.Configuration.Hosts[i]).To4() == nil {
-			copy(kvs.Configuration.Hosts[i:], kvs.Configuration.Hosts[i+1:])
-			kvs.Configuration.Hosts = kvs.Configuration.Hosts[:len(kvs.Configuration.Hosts)-1]
+		if kvs.Configuration.Hosts[i] != kvs.AppConfig.Cluster.Binding && net.ParseIP(kvs.Configuration.Hosts[i]) != nil && net.ParseIP(kvs.Configuration.Hosts[i]).To4() != nil {
+			tmp = append(tmp, kvs.Configuration.Hosts[i])
 		}
 	}
+	kvs.Configuration.Hosts = tmp
 	rlog.Infof("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
 	kvs.AppConfig.Cluster.NodeID = rand.Uint64()
@@ -236,7 +238,7 @@ func (kvs *KvService) connect() error {
 			}
 			break
 		}
-		fmt.Printf("Attempting to initiate cluster... Waited %d of %d seconds/n", waited, BOOTSTRAP_WAIT_S)
+		rlog.Infof("Attempting to initiate cluster... Waited %d of %d seconds\n", waited, BOOTSTRAP_WAIT_S)
 		time.Sleep(time.Duration(1) * time.Second)
 	}
 

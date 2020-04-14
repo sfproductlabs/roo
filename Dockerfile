@@ -4,7 +4,7 @@
 ####################################################################################
 
 FROM debian:latest
-EXPOSE 8443 8080 443 80
+EXPOSE 6299 6300 443 80
 
 # update packages and install required ones
 RUN apt update && apt upgrade -y && apt install -y \
@@ -14,6 +14,7 @@ RUN apt update && apt upgrade -y && apt install -y \
 #  python-pip \
   dnsutils \
   jq \
+  librocksdb-dev \
   && apt autoclean -y \
   && apt autoremove -y
 
@@ -55,7 +56,7 @@ RUN bash -c 'rm /app/roo/temp.config.json || exit 0'
 ####################################################################################
 
 # startup command
-CMD ["/usr/bin/nice", "-n", "5", "/app/roo/roo"] 
+CMD ["/usr/bin/nice", "-n", "5", "/app/roo/rood", "/app/roo/roo/config.json"] 
 # Can also clean logs > /dev/null 2>&1
 #sudo docker build -t roo .
 #sudo docker run -p 443:443 -p 80:80 roo
