@@ -40,12 +40,12 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything
 
 ## TODO
 
-[ ] Autoscale Docker
-[ ] Autoscale Physical Infratructure
-[ ] Move flaoting IPs (Load balance, service down)
-[ ] SSL in API
-[ ] HTTP for Proxying (Only SSL Supported atm)
-[ ] Auto downgrade 
+* [ ] Autoscale Docker
+* [ ] Autoscale Physical Infratructure
+* [ ] Move flaoting IPs (Load balance, service down)
+* [ ] SSL in API
+* [ ] HTTP for Proxying (Only SSL Supported atm)
+* [ ] Auto downgrade 
 
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)
