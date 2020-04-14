@@ -209,15 +209,25 @@ func (kvs *KvService) connect() error {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-						req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
-						if err != nil {
-							rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
-							continue
-						}
-						_, err = (&http.Client{}).Do(req)
-						if err == nil {
-							initialMembers[status.NodeID] = status.Binding + KV_PORT
-							alreadyJoined = true
+						join_attempts := 0
+						for {
+							join_attempts = join_attempts + 1
+							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+							if err != nil {
+								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+								continue
+							}
+							_, err = (&http.Client{}).Do(req)
+							if err == nil {
+								initialMembers[status.NodeID] = status.Binding + KV_PORT
+								alreadyJoined = true
+								continue
+							}
+							if join_attempts > BOOTSTRAP_WAIT_S {
+								fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
+								os.Exit(1)
+							}
+							time.Sleep(time.Duration(1) * time.Second)
 						}
 					}
 				}
@@ -271,6 +281,7 @@ func (kvs *KvService) connect() error {
 					rlog.Infof("Adding leader to kv didn't happen yet: %s\n", err)
 					continue
 				} else {
+					rlog.Infof("[[CREATED SEED]]\n")
 					kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 					break
 				}
@@ -278,6 +289,7 @@ func (kvs *KvService) connect() error {
 			}
 		}()
 	} else {
+		rlog.Infof("[[CREATED PEER]]\n")
 		kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 	}
 	return nil

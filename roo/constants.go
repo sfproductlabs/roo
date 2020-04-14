@@ -8,7 +8,7 @@ const (
 	ENV_ROO_RESOLVER    string = "ROO_RESOLVER"
 	ENV_ROO_START_DELAY string = "ROO_START_DELAY"
 	BOOTSTRAP_DELAY_MS  int    = 7000 //In milliseconds
-	BOOTSTRAP_WAIT_S    int    = 7
+	BOOTSTRAP_WAIT_S    int    = 60
 	PONG                string = "pong"
 	API_LIMIT_REACHED   string = "API Limit Reached"
 	HOST_NOT_FOUND      string = "Host Not Found"
