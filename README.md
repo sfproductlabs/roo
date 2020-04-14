@@ -35,7 +35,7 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything
 * Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
 
 ## TODO
-```
+
 [ ] Autoscale Docker
 [ ] Autoscale Physical Infratructure
 [ ] Move flaoting IPs (Load balance, service down)
