@@ -216,27 +216,19 @@ func (kvs *KvService) connect() error {
 							rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 							continue
 						} else {
-							joinAttempts := 0
-							for {
-								joinAttempts = joinAttempts + 1
-								time.Sleep(time.Duration(1) * time.Second)
-								req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
-								if err != nil {
-									rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
-									continue
-								}
-								resp, err = (&http.Client{}).Do(req)
-								if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-									initialMembers[status.NodeID] = status.Binding + KV_PORT
-									readyToJoin = true
-									break
-								}
-								rlog.Infof("Request to join failed, status-code: %d err: %v", resp.StatusCode, err)
-								if joinAttempts > BOOTSTRAP_WAIT_S {
-									fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
-									os.Exit(1)
-								}
+							time.Sleep(time.Duration(1) * time.Second)
+							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+							if err != nil {
+								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+								continue
 							}
+							resp, err = (&http.Client{}).Do(req)
+							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+								initialMembers[status.NodeID] = status.Binding + KV_PORT
+								readyToJoin = true
+								break
+							}
+							rlog.Warningf("[WARNING] Request to join failed, status-code: %d err: %v", resp.StatusCode, err)
 						}
 					} else {
 						if checkedBootstrapped > -1 {
