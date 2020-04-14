@@ -50,6 +50,16 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 * The resulting values are encoded in base64, so you may need to convert them (unlike the GET single query above which returns raw bytes)
 * Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
 
+## Help!
+
+### Inspecting the roo containers
+```
+docker run -it --net=forenet alpine ash
+nslookup tasks.roo_roo.
+curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
+```
+
+
 ## TODO
 
 * [ ] Autoscale Docker
