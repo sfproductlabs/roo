@@ -5,7 +5,8 @@ This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of
 ## Complete autoconfig of docker swarm
 (Coming momentarily) @psytron
 
-## Going Manual (Using the Distributed Key-Value (KV) Store (See the API below for access))
+## Going Manual
+Roo comes with a clustered autoconfiguring Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo.
 
 ### Adding a route to the routing table
 ```
