@@ -28,6 +28,8 @@ services:
     environment:
       - SWARM_NODE={{.Node.Hostname}}
       - ROO_DNS=tasks.roo_roo.
+      - ROO_RESOLVER=127.0.0.11
+      - ROO_START_DELAY=10
 
 networks:
   forenet:
