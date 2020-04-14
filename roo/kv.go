@@ -165,7 +165,7 @@ func (kvs *KvService) connect() error {
 			if h == kvs.AppConfig.Cluster.Binding {
 				continue
 			}
-			r, err := http.NewRequest("GET", "http://"+h+":6299/roo/"+apiVersion+"/status", nil) //TODO: https
+			r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/status", nil) //TODO: https
 			if err != nil {
 				rlog.Infof("Bad request to peer (request) %s, %s : %s", h, err)
 				continue
@@ -209,7 +209,7 @@ func (kvs *KvService) connect() error {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-						req, err := http.NewRequest("POST", "http://"+h+":6299/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+						req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
 						if err != nil {
 							rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
 							continue
