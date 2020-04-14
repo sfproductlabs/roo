@@ -199,9 +199,9 @@ func (kvs *KvService) connect() error {
 				}
 				initialMembers[status.NodeID] = status.Binding + KV_PORT
 				if status.Started > 0 {
+					checkedBootstrapped := 0
 				checkBootstrap:
 					//Check to see if cluster already bootstrapped (YES: join, NO: bootstrap)
-					checkedBootstrapped := 0
 					r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/kv/"+ROO_STARTED, nil)
 					resp, err = (&http.Client{}).Do(r)
 					if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
