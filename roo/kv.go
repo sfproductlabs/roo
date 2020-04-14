@@ -207,8 +207,6 @@ func (kvs *KvService) connect() error {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-
-						// alreadyJoined = true
 						joinAttempts := 0
 						for {
 							joinAttempts = joinAttempts + 1
@@ -253,12 +251,12 @@ func (kvs *KvService) connect() error {
 
 	if !alreadyJoined || len(initialMembers) == 0 {
 		initialMembers = map[uint64]string{}
-		initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 		alreadyJoined = false
 	}
+	//Add self to members
+	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 
-	//Bootstrap
-	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)?
+	//Begin cluster
 rejoin:
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v, members: %v\n", err, initialMembers)
