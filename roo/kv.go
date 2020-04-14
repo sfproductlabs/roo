@@ -154,6 +154,7 @@ func (kvs *KvService) connect() error {
 	initialMembers := map[uint64]string{}
 	olderThan := 0
 	alreadyJoined := false
+	readyToJoin := false
 	waited := 0
 	//Join existing nodes before bootstrapping
 	//Request /roo/api/v1/join from other nodes
@@ -198,52 +199,72 @@ func (kvs *KvService) connect() error {
 				}
 				initialMembers[status.NodeID] = status.Binding + KV_PORT
 				if status.Started > 0 {
-					//TODO:if Check to see if in bootstrap nodes
-					alreadyJoined = true
-					continue
-					//TODO:else
-					alreadyJoined = false
-					cs := &ClusterStatus{
-						NodeID:  kvs.AppConfig.Cluster.NodeID,
-						Group:   kvs.AppConfig.Cluster.Group,
-						Binding: kvs.AppConfig.Cluster.Binding,
-					}
-					if csdata, err := json.Marshal(cs); err != nil {
-						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
-						continue
-					} else {
-						joinAttempts := 0
-						for {
-							joinAttempts = joinAttempts + 1
-							time.Sleep(time.Duration(1) * time.Second)
-							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
-							if err != nil {
-								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
-								continue
-							}
-							resp, err = (&http.Client{}).Do(req)
-							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-								initialMembers[status.NodeID] = status.Binding + KV_PORT
-								alreadyJoined = true
-								break
-							}
-							if joinAttempts > BOOTSTRAP_WAIT_S {
-								fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
-								os.Exit(1)
+				checkBootstrap:
+					//Check to see if cluster already bootstrapped (YES: join, NO: bootstrap)
+					checkedBootstrapped := 0
+					r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/kv/"+ROO_STARTED, nil)
+					resp, err = (&http.Client{}).Do(r)
+					if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+						rlog.Infof("[[DISCOVERED BOOTSTRAPPED CLUSTER]]")
+						alreadyJoined = false
+						cs := &ClusterStatus{
+							NodeID:  kvs.AppConfig.Cluster.NodeID,
+							Group:   kvs.AppConfig.Cluster.Group,
+							Binding: kvs.AppConfig.Cluster.Binding,
+						}
+						if csdata, err := json.Marshal(cs); err != nil {
+							rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
+							continue
+						} else {
+							joinAttempts := 0
+							for {
+								joinAttempts = joinAttempts + 1
+								time.Sleep(time.Duration(1) * time.Second)
+								req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+								if err != nil {
+									rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+									continue
+								}
+								resp, err = (&http.Client{}).Do(req)
+								if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+									initialMembers[status.NodeID] = status.Binding + KV_PORT
+									readyToJoin = true
+									break
+								}
+								if joinAttempts > BOOTSTRAP_WAIT_S {
+									fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
+									os.Exit(1)
+								}
 							}
 						}
+					} else {
+						if checkedBootstrapped > 1 {
+							rlog.Infof("[[COULDN'T FIND BOOTSTRAPPED CLUSTER, BOOTSTRAPPING]]")
+							alreadyJoined = true
+							continue
+						} else {
+							checkedBootstrapped = checkedBootstrapped + 1
+							time.Sleep(time.Duration(7) * time.Second)
+							goto checkBootstrap
+						}
 					}
+
 				}
 			}
 		}
 		waited = waited + 1
 		if alreadyJoined {
-			rlog.Infof("[[PEERING]]\n")
+			rlog.Infof("[[BOOTSTRAPPING]]\n")
 			break
 		}
 		if olderThan == len(kvs.Configuration.Hosts) {
 			rlog.Infof("[[OLDEST]]\n")
 			alreadyJoined = true
+			break
+		}
+		if readyToJoin {
+			rlog.Infof("[[PEERING]]\n")
+			alreadyJoined = false
 			break
 		}
 		if waited >= BOOTSTRAP_WAIT_S {
@@ -273,34 +294,36 @@ rejoin:
 	}
 	kvs.nh = nh
 	kvs.Configuration.Session = kvs
-	//Leader finally adds themselves to kv store
-	if !alreadyJoined {
-		go func() {
-			time.Sleep(time.Duration(2) * time.Second) //Usually takes a few seconds for cluster to be ready
-			for {
-				time.Sleep(time.Duration(1) * time.Second)
-				action := &KVAction{
-					Action: PUT,
-					Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
-					Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
-				}
-				ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-				defer cancel()
-				if _, err := kvs.execute(ctx, action); err != nil {
-					rlog.Infof("Adding leader to kv didn't happen yet: %s\n", err)
-					continue
-				} else {
-					rlog.Infof("[[CREATED NORMAL NODE]]\n")
-					kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
-					break
-				}
+	//Add self to kv store
 
+	go func() {
+		for {
+			time.Sleep(time.Duration(7) * time.Second)
+			action := &KVAction{
+				Action: PUT,
+				Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
+				Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
 			}
-		}()
-	} else {
-		rlog.Infof("[[CREATED BOOTSTRAP NODE]]\n")
-		kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
-	}
+			ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+			defer cancel()
+			if _, err := kvs.execute(ctx, action); err != nil {
+				rlog.Infof("Adding node to kv didn't happen yet: %s probably still waiting for cluster\n", err)
+				continue
+			}
+			started := &KVAction{
+				Action: PUT,
+				Key:    ROO_STARTED,
+				Val:    []byte(strconv.FormatBool(true)),
+			}
+			if _, err := kvs.execute(ctx, started); err != nil {
+				rlog.Infof("Adding cluster started value failed\n", err)
+				continue
+			}
+			rlog.Infof("[[CREATED NODE]]\n")
+			kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
+			break
+		}
+	}()
 	return nil
 }
 

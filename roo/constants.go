@@ -27,6 +27,7 @@ const (
 	CLUSTER_PREFIX = "com.roo.cluster:"
 	PEER_PREFIX    = "com.roo.peer:"
 	TEMP_PREFIX    = "com.roo.temp:"
+	ROO_STARTED    = "com.roo.started"
 
 	GROUP_POSTFIX = ":group"
 	NODE_POSTFIX  = ":node"
