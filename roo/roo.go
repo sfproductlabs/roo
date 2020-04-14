@@ -313,7 +313,7 @@ func main() {
 				}
 
 			} else {
-				fmt.Printf("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
+				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
 			}
 			//SET THE DEFAULT API TO RUN THROUGH THE KV
 			configuration.API = *s.Service
@@ -399,7 +399,7 @@ func main() {
 		TLSConfig: &tls.Config{ // SEC PARAMS
 			GetCertificate:           certManager.GetCertificate,
 			PreferServerCipherSuites: true,
-			InsecureSkipVerify:       configuration.IgnoreInsecureTLS,
+			//InsecureSkipVerify:       configuration.IgnoreInsecureTLS,
 			CipherSuites: []uint16{
 				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,

@@ -76,7 +76,7 @@ import (
 func (kvs *KvService) connect() error {
 	kvs.Configuration.Hosts, _ = net.LookupHost(kvs.AppConfig.Cluster.DNS)
 	myIPs, _ := getMyIPs(true)
-	fmt.Printf("Cluster: My IPs: %s\n", getIPsString(myIPs))
+	rlog.Infof("Cluster: My IPs: %s\n", getIPsString(myIPs))
 	if kvs.AppConfig.Cluster.Binding != "" {
 		tempBinding := kvs.AppConfig.Cluster.Binding
 		kvs.AppConfig.Cluster.Binding = ""
@@ -101,7 +101,7 @@ func (kvs *KvService) connect() error {
 	if myip == nil {
 		log.Fatalf("[CRITICAL] Cluster: Could not initiate cluster on a service IP")
 	} else {
-		fmt.Printf("Cluster: Binding set to: %s\n", kvs.AppConfig.Cluster.Binding)
+		rlog.Infof("Cluster: Binding set to: %s\n", kvs.AppConfig.Cluster.Binding)
 	}
 
 	//Now exclude IPs from the hosts (ours or other IPv6)
@@ -111,7 +111,7 @@ func (kvs *KvService) connect() error {
 			kvs.Configuration.Hosts = kvs.Configuration.Hosts[:len(kvs.Configuration.Hosts)-1]
 		}
 	}
-	fmt.Printf("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
+	rlog.Infof("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
 	kvs.AppConfig.Cluster.NodeID = rand.Uint64()
 
