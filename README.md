@@ -74,8 +74,6 @@ nslookup tasks.roo_roo.
 curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
-
-
 ## TODO
 * [ ] Downscale swarm cleaner (removing a container should remove the raft address and nodehost, could run a leader process like in dcrontab) @psytron or link with docker connector
 * [ ] Autoscale Docker

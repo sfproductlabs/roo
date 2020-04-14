@@ -285,9 +285,6 @@ rejoin:
 		}
 		os.Exit(1)
 	}
-	kvs.nh = nh
-	kvs.Configuration.Session = kvs
-	//Add self to kv store
 
 	go func() {
 		for {
@@ -314,6 +311,9 @@ rejoin:
 				continue
 			}
 			rlog.Infof("[[CREATED NODE]]\n")
+			//Only respond to api requests once we have been created
+			kvs.nh = nh
+			kvs.Configuration.Session = kvs
 			break
 		}
 	}()
