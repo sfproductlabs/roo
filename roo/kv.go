@@ -49,6 +49,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -201,32 +202,32 @@ func (kvs *KvService) connect() error {
 						Group:   kvs.AppConfig.Cluster.Group,
 						Binding: kvs.AppConfig.Cluster.Binding,
 					}
-					if _, err := json.Marshal(cs); err != nil {
+					if csdata, err := json.Marshal(cs); err != nil {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-						initialMembers[status.NodeID] = status.Binding + KV_PORT
-						alreadyJoined = true
-						// join_attempts := 0
-						// for {
-						// 	join_attempts = join_attempts + 1
-						// 	time.Sleep(time.Duration(1) * time.Second)
-						// 	req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
-						// 	if err != nil {
-						// 		rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
-						// 		continue
-						// 	}
-						// 	_, err = (&http.Client{}).Do(req)
-						// 	if err == nil {
-						// 		initialMembers[status.NodeID] = status.Binding + KV_PORT
-						// 		alreadyJoined = true
-						// 		break
-						// 	}
-						// 	if join_attempts > BOOTSTRAP_WAIT_S {
-						// 		fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
-						// 		os.Exit(1)
-						// 	}
-						// }
+						// initialMembers[status.NodeID] = status.Binding + KV_PORT
+						// alreadyJoined = true
+						joinAttempts := 0
+						for {
+							joinAttempts = joinAttempts + 1
+							time.Sleep(time.Duration(1) * time.Second)
+							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+							if err != nil {
+								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+								continue
+							}
+							_, err = (&http.Client{}).Do(req)
+							if err == nil {
+								initialMembers[status.NodeID] = status.Binding + KV_PORT
+								alreadyJoined = true
+								break
+							}
+							if joinAttempts > BOOTSTRAP_WAIT_S {
+								fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
+								os.Exit(1)
+							}
+						}
 					}
 				}
 			}
