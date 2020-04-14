@@ -13,7 +13,6 @@ import (
 
 func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configuration) {
 	w := *writer
-
 	//Check the local cached proxy list
 	if p, found := configuration.ProxyCache.Get(r.Host); found {
 		p.(*httputil.ReverseProxy).ServeHTTP(w, r)
@@ -22,7 +21,11 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 	//Then check the kv-cluster
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
 	defer cancel()
-	if dest, err := configuration.Cluster.Service.Session.(*KvService).Get(ctx, HOST_PREFIX+r.Host+r.URL.Port()); err != nil || dest == nil {
+	scheme := ":https" //scheme default is https and is empty string
+	if r.TLS == nil {
+		scheme = ":http"
+	}
+	if dest, err := configuration.Cluster.Service.Session.(*KvService).Get(ctx, HOST_PREFIX+r.Host+scheme); err != nil || dest == nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(HOST_NOT_FOUND))
 	} else {
