@@ -321,6 +321,8 @@ rejoin:
 						rlog.Infof("Adding roo.started value failed\n", err)
 						time.Sleep(time.Duration(7) * time.Second)
 						continue
+					} else {
+						rlog.Infof("[[ROO RE/CONFIRMED STARTED]]\n")
 					}
 					break
 				}
