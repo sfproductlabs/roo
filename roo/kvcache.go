@@ -15,13 +15,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
+	"github.com/patrickmn/go-cache"
 )
 
 // ErrCacheMiss is returned when a certificate is not found in cache.
 var ErrCacheMiss = errors.New("Cache miss")
+var CertCache = cache.New(3600*time.Second, 90*time.Second)
 
 // Get reads a certificate data from the specified kv.
 func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
+	if p, found := CertCache.Get(name); found {
+		return *p.(*[]byte), nil
+	}
 	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(name))
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
@@ -47,11 +54,13 @@ func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 		rlog.Errorf("[PUT] Cache key: %s, error: %v", kv.Key, err)
 	}
 	_, err = kvs.nh.SyncPropose(ctx, cs, kvdata)
+	CertCache.Set(name, &data, cache.DefaultExpiration)
 	return err
 }
 
 // Delete removes the specified kv.
 func (kvs KvService) Delete(ctx context.Context, name string) error {
-	rlog.Warningf("[kvcache] Delete not implemented\n")
+	CertCache.Delete(name)
+	rlog.Warningf("[kvcache] Delete kv not implemented\n")
 	return nil
 }
