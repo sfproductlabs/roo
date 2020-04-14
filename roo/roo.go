@@ -73,7 +73,7 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 4")
+	fmt.Println("Roo. Version 7")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
@@ -134,26 +134,19 @@ func main() {
 		// 	log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
 		// }
 		// 	rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
-		target := "microsoft.com"
-		server := "8.8.8.8"
-
+		ns := configuration.Cluster.Resolver + ":53"
 		c := dns.Client{}
 		m := dns.Msg{}
-		m.SetQuestion(target+".", dns.TypeA)
-		r, t, err := c.Exchange(&m, server+":53")
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("Took %v", t)
-		if len(r.Answer) == 0 {
-			log.Fatal("No results")
-		}
-		for _, ans := range r.Answer {
-			Arecord := ans.(*dns.A)
-			configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, Arecord.A.String())
-		}
+		m.SetQuestion(configuration.Cluster.DNS, dns.TypeA)
+		r, _, err := c.Exchange(&m, ns)
 		if err != nil {
 			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed, %v", err)
+		}
+		for _, ans := range r.Answer {
+			a, ok := ans.(*dns.A)
+			if ok {
+				configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, a.A.String())
+			}
 		}
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
