@@ -315,6 +315,8 @@ rejoin:
 						Key:    ROO_STARTED,
 						Val:    []byte(strconv.FormatBool(true)),
 					}
+					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
 					if _, err := kvs.execute(ctx, started); err != nil {
 						rlog.Infof("Adding roo.started value failed\n", err)
 						time.Sleep(time.Duration(7) * time.Second)
