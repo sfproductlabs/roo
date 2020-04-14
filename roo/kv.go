@@ -166,12 +166,12 @@ func (kvs *KvService) connect() error {
 			if h == kvs.AppConfig.Cluster.Binding {
 				continue
 			}
+		getNodeStatus:
 			r, _ := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/status", nil) //TODO: https
 			ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 			defer cancel()
 			r = r.WithContext(ctx)
 			client := &http.Client{}
-		getNodeStatus:
 			resp, err := client.Do(r)
 			if err != nil {
 				rlog.Infof("Could not connect to peer %s, %s", h, err)
