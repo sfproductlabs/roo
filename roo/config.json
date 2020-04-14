@@ -17,7 +17,7 @@
     "Cluster": {
         "StartDelaySeconds": 0,
         "DNS": "localhost",
-        "Resolver": "8.8.8.8",
+        "Resolver": "",
         "Group": 1,
         "Binding" : "",
         "Service": {

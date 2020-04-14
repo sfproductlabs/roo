@@ -113,6 +113,28 @@ func main() {
 	}
 
 	////////////////////////////////////////DNS QUERY
+	rlog.Infof("Cluster: Looking up hosts at: %s\n", configuration.Cluster.DNS)
+	// if configuration.Cluster.Resolver == "" {
+	// 	rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
+	// 	configuration.Cluster.Service.Hosts, _ = net.LookupHost(configuration.Cluster.DNS)
+	// } else {
+	// 	rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
+	// 	ns := configuration.Cluster.Resolver + ":53"
+	// 	c := dns.Client{}
+	// 	m := dns.Msg{}
+	// 	m.SetQuestion(configuration.Cluster.DNS, dns.TypeA)
+	// 	r, _, err := c.Exchange(&m, ns)
+	// 	if err != nil {
+	// 		log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed, %v", err)
+	// 	}
+	// 	// Last CNAME
+	// 	for _, ans := range r.Answer {
+	// 		a, ok := ans.(*dns.A)
+	// 		if ok {
+	// 			configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, a.A.String())
+	// 		}
+	// 	}
+	// }
 	if configuration.Cluster.Resolver == "" {
 		rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
 		configuration.Cluster.Service.Hosts, _ = net.LookupHost(configuration.Cluster.DNS)
@@ -129,7 +151,7 @@ func main() {
 		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
 		var err error
 		if configuration.Cluster.Service.Hosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
-			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed")
+			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
 		}
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
