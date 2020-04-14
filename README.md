@@ -2,6 +2,12 @@
 
 This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops.
 
+## Getting Started
+```
+# docker stack rm roo
+# docker stack deploy -c roo-docker-compose.yml roo
+```
+
 ## Complete autoconfig of docker swarm services
 (Coming momentarily) @psytron
 
@@ -53,11 +59,17 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 ## Help!
 
 ### Inspecting the roo containers
+* Inspect the logs
+```
+docker service logs roo_roo -f
+```
+* Inspect the containers
 ```
 docker run -it --net=forenet alpine ash
 nslookup tasks.roo_roo.
 curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
+
 
 
 ## TODO
