@@ -325,11 +325,11 @@ rejoin:
 			}()
 			rlog.Infof("[[CREATED NODE]]\n")
 			//Only respond to api requests once we have been created
-			kvs.nh = nh
-			kvs.Configuration.Session = kvs
 			break
 		}
 	}()
+	kvs.nh = nh
+	kvs.Configuration.Session = kvs
 	return nil
 }
 
