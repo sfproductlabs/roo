@@ -368,7 +368,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 							return nil
 						}
 					} else {
-						return fmt.Errorf("Membership add failed %s\n", err)
+						return fmt.Errorf("Membership add failed %v\n", res)
 					}
 				}
 			} else {
