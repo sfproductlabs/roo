@@ -8,7 +8,9 @@ This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of
 ## Going Manual
 Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo.
 
-### Adding a route to the routing table
+### Schema Definitions
+
+#### Adding a route to the routing table
 ```
 com.roo.host:<requesting_host<:port (optional)>:scheme>  <destination_url>
 ```
