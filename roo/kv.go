@@ -171,7 +171,7 @@ func (kvs *KvService) connect() error {
 			defer cancel()
 			r = r.WithContext(ctx)
 			client := &http.Client{}
-		getStatus:
+		getNodeStatus:
 			resp, err := client.Do(r)
 			if err != nil {
 				rlog.Infof("Could not connect to peer %s, %s", h, err)
@@ -181,7 +181,7 @@ func (kvs *KvService) connect() error {
 					fmt.Println("[ERROR] Could not confirm status from initial peers.")
 					os.Exit(1)
 				}
-				goto getStatus
+				goto getNodeStatus
 			} else {
 				defer resp.Body.Close()
 				body, err := ioutil.ReadAll(resp.Body)
