@@ -165,19 +165,22 @@ func (kvs *KvService) connect() error {
 			if h == kvs.AppConfig.Cluster.Binding {
 				continue
 			}
-			r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/status", nil) //TODO: https
-			if err != nil {
-				rlog.Infof("Bad request to peer (request) %s, %s : %s", h, err)
-				continue
-			}
+			r, _ := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/status", nil) //TODO: https
 			ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 			defer cancel()
 			r = r.WithContext(ctx)
 			client := &http.Client{}
+		getStatus:
 			resp, err := client.Do(r)
 			if err != nil {
 				rlog.Infof("Could not connect to peer %s, %s", h, err)
-				continue
+				time.Sleep(time.Duration(1) * time.Second)
+				waited = waited + 1
+				if waited >= BOOTSTRAP_WAIT_S {
+					fmt.Println("[ERROR] Could not confirm status from initial peers.")
+					os.Exit(1)
+				}
+				goto getStatus
 			} else {
 				defer resp.Body.Close()
 				body, err := ioutil.ReadAll(resp.Body)
@@ -190,6 +193,9 @@ func (kvs *KvService) connect() error {
 					rlog.Infof("Bad response from peer (json) %s, %s : %s", h, body, err)
 					continue
 				}
+				//TODO: Check if the node id is the same as the others
+				//Then reboot
+
 				if status.Instantiated == kvs.AppConfig.Cluster.Service.Instantiated {
 					fmt.Println("[ERROR] Shutting down instance to avoid contention.") //Will auto restart in swarm
 					os.Exit(1)
@@ -232,7 +238,7 @@ func (kvs *KvService) connect() error {
 						}
 					} else {
 						if checkedBootstrapped > -1 {
-							rlog.Infof("[[COULDN'T FIND BOOTSTRAPPED CLUSTER, BOOTSTRAPPING]]")
+							rlog.Infof("[[COULDN'T FIND BOOTSTRAPPED CLUSTER]]")
 							alreadyJoined = true
 							continue
 						} else {
