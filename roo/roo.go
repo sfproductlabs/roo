@@ -54,7 +54,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -107,7 +106,11 @@ func main() {
 	if envStartDelay, _ := strconv.ParseInt(os.Getenv(ENV_ROO_START_DELAY), 10, 64); envStartDelay > 0 {
 		configuration.Cluster.StartDelaySeconds = envStartDelay
 	}
-	if configuration.Cluster.StartDelaySeconds > 0 {
+
+	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
+		if configuration.Cluster.StartDelaySeconds == 0 {
+			configuration.Cluster.StartDelaySeconds = 10
+		}
 		rlog.Infof("[INFO] Sleeping this node for %d seconds before boot. Letting DNS settle.\n", configuration.Cluster.StartDelaySeconds)
 		time.Sleep(time.Duration(configuration.Cluster.StartDelaySeconds) * time.Second)
 	}
@@ -134,13 +137,6 @@ func main() {
 		}
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
-
-	////////////////////////////////////////RANDOM DELAY
-	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
-		setupSleep := rand.Intn(BOOTSTRAP_DELAY_MS) + 3000
-		rlog.Infof("[INFO] Sleeping this node for %d milliseconds to avoid cluster bootstrap race.\n", setupSleep)
-		time.Sleep(time.Duration(setupSleep) * time.Millisecond)
-	}
 
 	////////////////////////////////////////SETUP ORIGIN
 	if configuration.AllowOrigin == "" {
