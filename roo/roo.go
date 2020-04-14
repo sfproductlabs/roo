@@ -132,8 +132,6 @@ func main() {
 		if configuration.Cluster.Service.Hosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
 			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
 		}
-		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
-
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
 
