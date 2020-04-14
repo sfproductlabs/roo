@@ -152,7 +152,6 @@ func (kvs *KvService) connect() error {
 
 	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
 	initialMembers := map[uint64]string{}
-	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 	olderThan := 0
 	alreadyJoined := false
 	waited := 0
@@ -197,6 +196,7 @@ func (kvs *KvService) connect() error {
 				if status.Instantiated > kvs.AppConfig.Cluster.Service.Instantiated {
 					olderThan = olderThan + 1
 				}
+				initialMembers[status.NodeID] = status.Binding + KV_PORT
 				if status.Started > 0 {
 					cs := &ClusterStatus{
 						NodeID:  kvs.AppConfig.Cluster.NodeID,
@@ -207,7 +207,7 @@ func (kvs *KvService) connect() error {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-						// initialMembers[status.NodeID] = status.Binding + KV_PORT
+
 						// alreadyJoined = true
 						joinAttempts := 0
 						for {
@@ -251,7 +251,9 @@ func (kvs *KvService) connect() error {
 		time.Sleep(time.Duration(1) * time.Second)
 	}
 
-	if len(initialMembers) == 0 {
+	if !alreadyJoined || len(initialMembers) == 0 {
+		initialMembers = map[uint64]string{}
+		initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 		alreadyJoined = false
 	}
 
