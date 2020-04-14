@@ -216,8 +216,8 @@ func (kvs *KvService) connect() error {
 								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
 								continue
 							}
-							_, err = (&http.Client{}).Do(req)
-							if err == nil {
+							resp, err = (&http.Client{}).Do(req)
+							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 								initialMembers[status.NodeID] = status.Binding + KV_PORT
 								alreadyJoined = true
 								break
@@ -370,7 +370,6 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		} else {
 			return fmt.Errorf("Bad request (body)")
 		}
-		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
 	case SERVE_GET_KV:
 		action := &KVAction{
 			Action: GET,
