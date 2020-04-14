@@ -19,7 +19,7 @@ curl -X PUT -d'test data' http://localhost:6299/roo/v1/kv/test
 
 ```curl -X PUT -d'http://tasks.cool_game:9001' http://localhost:6299/roo/v1/kv/com.roo.host:google.com:443```
 
-To test you can run something like this:
+To test you can run something like this (this just makes your localhost pretend like its responding to a request to google.com):
 ```curl -H "Host: google.com" https://localhost:443/```
 
 ### Get a key from the store
