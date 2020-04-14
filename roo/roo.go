@@ -91,7 +91,7 @@ func main() {
 	configuration := Configuration{}
 	err := decoder.Decode(&configuration)
 	if err != nil {
-		log.Fatalf("[ERROR] Configuration file has errors %s", err)
+		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
 	}
 
 	////////////////////////////////////////OVERRIDE CLUSTER DNS FROM ENV
