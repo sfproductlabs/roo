@@ -79,7 +79,7 @@ func (kvs *KvService) connect() error {
 		kvs.Configuration.Hosts, _ = net.LookupHost(kvs.AppConfig.Cluster.DNS)
 	} else {
 		r := &net.Resolver{
-			PreferGo: false,
+			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 				d := net.Dialer{
 					Timeout: time.Millisecond * time.Duration(10000),

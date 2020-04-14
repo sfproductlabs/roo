@@ -15,8 +15,9 @@
     "DefaultRedirect": "https://sfpl.io",
     "Debug": true,
     "Cluster": {
+        "StartDelaySeconds": 0,
         "DNS": "localhost",
-        "Resolver": "",
+        "Resolver": "8.8.8.8",
         "Group": 1,
         "Binding" : "",
         "Service": {

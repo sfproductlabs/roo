@@ -101,11 +101,20 @@ func main() {
 	if envResolver := os.Getenv(ENV_ROO_RESOLVER); envResolver != "" {
 		configuration.Cluster.Resolver = envResolver
 	}
+	////////////////////////////////////////FIXED DELAY
+
+	if envStartDelay, _ := strconv.ParseInt(os.Getenv(ENV_ROO_START_DELAY), 10, 64); envStartDelay > 0 {
+		configuration.Cluster.StartDelaySeconds = envStartDelay
+	}
+	if configuration.Cluster.StartDelaySeconds > 0 {
+		rlog.Infof("[INFO] Sleeping this node for %d seconds before boot. Letting DNS settle.\n", configuration.Cluster.StartDelaySeconds)
+		time.Sleep(time.Duration(configuration.Cluster.StartDelaySeconds) * time.Second)
+	}
 
 	////////////////////////////////////////RANDOM DELAY
 	if configuration.Cluster.DNS != "" && configuration.Cluster.DNS != "localhost" {
 		setupSleep := rand.Intn(BOOTSTRAP_DELAY_MS)
-		fmt.Printf("[INFO] Sleeping this node for %d milliseconds to avoid cluster bootstrap race.\n", setupSleep)
+		rlog.Infof("[INFO] Sleeping this node for %d milliseconds to avoid cluster bootstrap race.\n", setupSleep)
 		time.Sleep(time.Duration(setupSleep) * time.Millisecond)
 	}
 
