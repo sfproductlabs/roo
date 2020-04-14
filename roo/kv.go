@@ -151,17 +151,14 @@ func (kvs *KvService) connect() error {
 
 	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
 	initialMembers := map[uint64]string{}
-	oldest := true
-	oldestConfirmed := true
+	olderThan := 0
 	alreadyJoined := false
 	waited := 0
 	//Join existing nodes before bootstrapping
 	//Request /roo/api/v1/join from other nodes
 
 	for {
-		oldest = true
-		oldestConfirmed = true
-		alreadyJoined = false
+		olderThan = 0
 		for _, h := range kvs.Configuration.Hosts {
 			if h == kvs.AppConfig.Cluster.Binding {
 				continue
@@ -178,7 +175,6 @@ func (kvs *KvService) connect() error {
 			resp, err := client.Do(r)
 			if err != nil {
 				rlog.Infof("Could not connect to peer %s, %s", h, err)
-				oldestConfirmed = false
 				continue
 			} else {
 				defer resp.Body.Close()
@@ -190,15 +186,14 @@ func (kvs *KvService) connect() error {
 				status := &ClusterStatus{}
 				if err := json.Unmarshal(body, status); err != nil {
 					rlog.Infof("Bad response from peer (json) %s, %s : %s", h, body, err)
-					oldestConfirmed = false
 					continue
 				}
 				if status.Instantiated == kvs.AppConfig.Cluster.Service.Instantiated {
 					fmt.Println("[ERROR] Shutting down instance to avoid contention.") //Will auto restart in swarm
 					os.Exit(1)
 				}
-				if status.Instantiated < kvs.AppConfig.Cluster.Service.Instantiated {
-					oldest = false
+				if status.Instantiated > kvs.AppConfig.Cluster.Service.Instantiated {
+					olderThan = olderThan + 1
 				}
 				if status.Started > 0 {
 					cs := &ClusterStatus{
@@ -212,7 +207,6 @@ func (kvs *KvService) connect() error {
 					} else {
 						initialMembers[status.NodeID] = status.Binding + KV_PORT
 						alreadyJoined = true
-						break
 						// join_attempts := 0
 						// for {
 						// 	join_attempts = join_attempts + 1
@@ -242,7 +236,7 @@ func (kvs *KvService) connect() error {
 			rlog.Infof("[[PEERING]]\n")
 			break
 		}
-		if oldest && oldestConfirmed {
+		if olderThan == len(kvs.Configuration.Hosts) {
 			rlog.Infof("[[OLDEST]]\n")
 			alreadyJoined = false
 			break
