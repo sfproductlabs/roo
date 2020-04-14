@@ -299,6 +299,7 @@ rejoin:
 	go func() {
 		for {
 			time.Sleep(time.Duration(4) * time.Second)
+			kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 			action := &KVAction{
 				Action: PUT,
 				Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
@@ -320,7 +321,6 @@ rejoin:
 				continue
 			}
 			rlog.Infof("[[CREATED NODE]]\n")
-			kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 			break
 		}
 	}()
