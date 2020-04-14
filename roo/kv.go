@@ -290,7 +290,7 @@ rejoin:
 					rlog.Infof("Adding leader to kv didn't happen yet: %s\n", err)
 					continue
 				} else {
-					rlog.Infof("[[CREATED SEED]]\n")
+					rlog.Infof("[[CREATED NORMAL NODE]]\n")
 					kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 					break
 				}
@@ -298,7 +298,7 @@ rejoin:
 			}
 		}()
 	} else {
-		rlog.Infof("[[CREATED PEER]]\n")
+		rlog.Infof("[[CREATED BOOTSTRAP NODE]]\n")
 		kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 	}
 	return nil
