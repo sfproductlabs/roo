@@ -152,9 +152,9 @@ func (kvs *KvService) connect() error {
 	}
 
 	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
-	initialMembers := map[uint64]string{}
+	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
 	olderThan := 0
-	alreadyJoined := false
+	bootstrap := false
 	readyToJoin := false
 	waited := 0
 	//Join existing nodes before bootstrapping
@@ -213,7 +213,7 @@ func (kvs *KvService) connect() error {
 					resp, err = (&http.Client{}).Do(r)
 					if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 						rlog.Infof("[[DISCOVERED BOOTSTRAPPED CLUSTER]]")
-						alreadyJoined = false
+						bootstrap = false
 						cs := &ClusterStatus{
 							NodeID:  kvs.AppConfig.Cluster.NodeID,
 							Group:   kvs.AppConfig.Cluster.Group,
@@ -231,6 +231,7 @@ func (kvs *KvService) connect() error {
 							}
 							resp, err = (&http.Client{}).Do(req)
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+								initialMembers := map[uint64]string{}
 								initialMembers[status.NodeID] = status.Binding + KV_PORT
 								readyToJoin = true
 								break
@@ -240,7 +241,7 @@ func (kvs *KvService) connect() error {
 					} else {
 						if checkedBootstrapped > -1 {
 							rlog.Infof("[[COULDN'T FIND BOOTSTRAPPED CLUSTER]]")
-							alreadyJoined = true
+							bootstrap = true
 							continue
 						} else {
 							checkedBootstrapped = checkedBootstrapped + 1
@@ -253,18 +254,18 @@ func (kvs *KvService) connect() error {
 			}
 		}
 		waited = waited + 1
-		if alreadyJoined {
+		if bootstrap {
 			rlog.Infof("[[BOOTSTRAPPING]]\n")
 			break
 		}
 		if olderThan == len(kvs.Configuration.Hosts) {
 			rlog.Infof("[[OLDEST]]\n")
-			alreadyJoined = true
+			bootstrap = true
 			break
 		}
 		if readyToJoin {
 			rlog.Infof("[[PEERING]]\n")
-			alreadyJoined = false
+			bootstrap = false
 			break
 		}
 		if waited >= BOOTSTRAP_WAIT_S {
@@ -275,18 +276,11 @@ func (kvs *KvService) connect() error {
 		time.Sleep(time.Duration(1) * time.Second)
 	}
 
-	// if !alreadyJoined || len(initialMembers) == 0 {
-	// 	initialMembers = map[uint64]string{}
-	// 	alreadyJoined = false
-	// }
-	//Add self to members
-	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
-
 	//Begin cluster
 rejoin:
-	if err := nh.StartOnDiskCluster(initialMembers, !alreadyJoined, NewDiskKV, rc); err != nil {
+	if err := nh.StartOnDiskCluster(initialMembers, !bootstrap, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v, members: %v\n", err, initialMembers)
-		if alreadyJoined {
+		if bootstrap {
 			time.Sleep(time.Duration(1) * time.Second)
 			goto rejoin
 		}
