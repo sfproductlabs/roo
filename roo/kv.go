@@ -238,13 +238,13 @@ func (kvs *KvService) connect() error {
 							}
 						}
 					} else {
-						if checkedBootstrapped > 1 {
+						if checkedBootstrapped > -1 {
 							rlog.Infof("[[COULDN'T FIND BOOTSTRAPPED CLUSTER, BOOTSTRAPPING]]")
 							alreadyJoined = true
 							continue
 						} else {
 							checkedBootstrapped = checkedBootstrapped + 1
-							time.Sleep(time.Duration(7) * time.Second)
+							time.Sleep(time.Duration(4) * time.Second)
 							goto checkBootstrap
 						}
 					}
