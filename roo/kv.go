@@ -49,7 +49,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -211,26 +210,29 @@ func (kvs *KvService) connect() error {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
-						join_attempts := 0
-						for {
-							join_attempts = join_attempts + 1
-							time.Sleep(time.Duration(1) * time.Second)
-							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
-							if err != nil {
-								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
-								continue
-							}
-							_, err = (&http.Client{}).Do(req)
-							if err == nil {
-								initialMembers[status.NodeID] = status.Binding + KV_PORT
-								alreadyJoined = true
-								break
-							}
-							if join_attempts > BOOTSTRAP_WAIT_S {
-								fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
-								os.Exit(1)
-							}
-						}
+						initialMembers[status.NodeID] = status.Binding + KV_PORT
+						alreadyJoined = true
+						break
+						// join_attempts := 0
+						// for {
+						// 	join_attempts = join_attempts + 1
+						// 	time.Sleep(time.Duration(1) * time.Second)
+						// 	req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+						// 	if err != nil {
+						// 		rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
+						// 		continue
+						// 	}
+						// 	_, err = (&http.Client{}).Do(req)
+						// 	if err == nil {
+						// 		initialMembers[status.NodeID] = status.Binding + KV_PORT
+						// 		alreadyJoined = true
+						// 		break
+						// 	}
+						// 	if join_attempts > BOOTSTRAP_WAIT_S {
+						// 		fmt.Println("[ERROR] Shutting down instance after waiting too long to join.") //Will auto restart in swarm
+						// 		os.Exit(1)
+						// 	}
+						// }
 					}
 				}
 			}
@@ -260,9 +262,12 @@ func (kvs *KvService) connect() error {
 
 	//Bootstrap
 	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)?
+rejoin:
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v\n", err)
 		os.Exit(1)
+	} else {
+		goto rejoin
 	}
 	kvs.nh = nh
 	kvs.Configuration.Session = kvs
