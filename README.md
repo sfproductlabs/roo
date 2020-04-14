@@ -9,7 +9,7 @@ com.roo.host:<requesting_host:port>  <destination_host:port>
 ```
 
 ## API 
-### Post a key to the distributed store
+### Post a single key to the distributed store
 ```
 curl -X PUT -d'test data' http://localhost:6299/roo/v1/kv/test
 ```
@@ -29,7 +29,7 @@ So to summarize, google.com:443 is the incoming route to roo from the internet, 
 curl -X GET http://localhost:6299/roo/v1/kv/test
 ```
 * Returns the raw bytes (you'll see this as a string if you stored it like that)
-### Query multiple keys from the store (SCAN query)
+### List multiple keys from the store (Using a SCAN/Prefix filter query)
 ```
 curl -X GET http://localhost:6299/roo/v1/kvs/te #Searches the prefix _te_
 curl -X GET http://localhost:6299/roo/v1/kvs/tes #Searches the prefix _tes_
