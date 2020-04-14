@@ -160,7 +160,9 @@ func (kvs *KvService) connect() error {
 	//Request /roo/api/v1/join from other nodes
 
 	for {
-
+		oldest = true
+		oldestConfirmed = true
+		alreadyJoined = false
 		for _, h := range kvs.Configuration.Hosts {
 			if h == kvs.AppConfig.Cluster.Binding {
 				continue
@@ -344,7 +346,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 				}
 				err = kvs.nh.SyncRequestAddNode(r.Context(), cs.Group, cs.NodeID, cs.Binding+KV_PORT, 0)
 				rlog.Infof("[INFO] Node requested to join cluster: %v, errors: %v", cs, err)
-				if err != nil {
+				if err == nil {
 					action = &KVAction{
 						Action: PUT,
 						Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
@@ -354,8 +356,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 					writer := *w
 					writer.WriteHeader(http.StatusOK)
 				} else {
-					writer := *w
-					writer.WriteHeader(http.StatusBadRequest)
+					return err
 				}
 			} else {
 				return fmt.Errorf("Bad request (data)")
