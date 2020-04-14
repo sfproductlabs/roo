@@ -24,18 +24,20 @@ To test you can run something like this (this just makes your localhost pretend 
 
 So to summarize, google.com:443 is the incoming route to roo from the internet, and tasks.cool_game:9001 is your service and port to your internal service (in this case its an internal intranet _docker swarm_ service).
 
-### Get a key from the store
+### Get a SINGLE key from the store
 ```
 curl -X GET http://localhost:6299/roo/v1/kv/test
 ```
-* Returns the raw bytes
-### Query the store (SCAN query)
+* Returns the raw bytes (you'll see this as a string if you stored it like that)
+### Query multiple keys from the store (SCAN query)
 ```
 curl -X GET http://localhost:6299/roo/v1/kvs/te #Searches the prefix _te_
 curl -X GET http://localhost:6299/roo/v1/kvs/tes #Searches the prefix _tes_
 curl -X GET http://localhost:6299/roo/v1/kvs/test #Searches the prefix _test_
 curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything
 ```
+* Returns the rows searched using the SCAN query (in KV land its a prefix filter)
+* The results are in base64, so you may need to convert them (unlike the GET single query above)
 * Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
 
 ## TODO
