@@ -298,6 +298,7 @@ rejoin:
 
 	go func() {
 		for {
+			time.Sleep(time.Duration(4) * time.Second)
 			action := &KVAction{
 				Action: PUT,
 				Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
@@ -307,7 +308,6 @@ rejoin:
 			defer cancel()
 			if _, err := kvs.execute(ctx, action); err != nil {
 				rlog.Infof("Adding node to kv didn't happen yet: %s probably still waiting for cluster\n", err)
-				time.Sleep(time.Duration(7) * time.Second)
 				continue
 			}
 			started := &KVAction{
@@ -317,7 +317,6 @@ rejoin:
 			}
 			if _, err := kvs.execute(ctx, started); err != nil {
 				rlog.Infof("Adding cluster started value failed\n", err)
-				time.Sleep(time.Duration(1) * time.Second)
 				continue
 			}
 			rlog.Infof("[[CREATED NODE]]\n")
