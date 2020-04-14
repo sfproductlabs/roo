@@ -298,7 +298,7 @@ rejoin:
 
 	go func() {
 		for {
-			time.Sleep(time.Duration(4) * time.Second)
+			time.Sleep(time.Duration(7) * time.Second)
 			kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 			action := &KVAction{
 				Action: PUT,
