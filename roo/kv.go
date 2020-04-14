@@ -211,7 +211,11 @@ func (kvs *KvService) connect() error {
 					//Check to see if cluster already bootstrapped (YES: join, NO: bootstrap)
 					r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/kv/"+ROO_STARTED, nil)
 					resp, err = (&http.Client{}).Do(r)
-					if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+					if err == nil {
+						defer resp.Body.Close()
+						body, err = ioutil.ReadAll(resp.Body)
+					}
+					if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 && string(body) == "true" {
 						rlog.Infof("[[DISCOVERED BOOTSTRAPPED CLUSTER]]")
 						bootstrap = false
 						cs := &ClusterStatus{
@@ -288,28 +292,37 @@ rejoin:
 
 	go func() {
 		for {
-			time.Sleep(time.Duration(7) * time.Second)
 			kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
 			action := &KVAction{
 				Action: PUT,
 				Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
 				Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			if _, err := kvs.execute(ctx, action); err != nil {
 				rlog.Infof("Adding node to kv didn't happen yet: %s probably still waiting for cluster\n", err)
+				time.Sleep(time.Duration(7) * time.Second)
 				continue
 			}
-			started := &KVAction{
-				Action: PUT,
-				Key:    ROO_STARTED,
-				Val:    []byte(strconv.FormatBool(true)),
-			}
-			if _, err := kvs.execute(ctx, started); err != nil {
-				rlog.Infof("Adding cluster started value failed\n", err)
-				continue
-			}
+			go func() {
+				//Delay started to allow bootstrapped nodes to join in time
+				//Implies we can't scale for another BOOTSTRAP_WAIT_S/2
+				for {
+					time.Sleep(time.Duration(BOOTSTRAP_WAIT_S/2) * time.Second)
+					started := &KVAction{
+						Action: PUT,
+						Key:    ROO_STARTED,
+						Val:    []byte(strconv.FormatBool(true)),
+					}
+					if _, err := kvs.execute(ctx, started); err != nil {
+						rlog.Infof("Adding roo.started value failed\n", err)
+						time.Sleep(time.Duration(7) * time.Second)
+						continue
+					}
+					break
+				}
+			}()
 			rlog.Infof("[[CREATED NODE]]\n")
 			//Only respond to api requests once we have been created
 			kvs.nh = nh
