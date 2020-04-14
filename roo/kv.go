@@ -239,17 +239,17 @@ func (kvs *KvService) connect() error {
 		}
 		waited = waited + 1
 		if alreadyJoined {
+			rlog.Infof("[[PEERING]]\n")
 			break
 		}
 		if oldest && oldestConfirmed {
+			rlog.Infof("[[OLDEST]]\n")
 			alreadyJoined = false
 			break
 		}
 		if waited >= BOOTSTRAP_WAIT_S {
-			if oldest {
-				alreadyJoined = false
-			}
-			break
+			fmt.Println("[ERROR] Could not confirm node is the oldest before time ran out")
+			os.Exit(1)
 		}
 		rlog.Infof("Attempting to initiate cluster... Waited %d of %d seconds\n", waited, BOOTSTRAP_WAIT_S)
 		time.Sleep(time.Duration(1) * time.Second)
