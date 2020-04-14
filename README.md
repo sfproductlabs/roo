@@ -5,7 +5,7 @@ Bouncy bouncy bounce
 ## KV Store
 
 ```
-com.roo.host:<host>  <host:port>
+com.roo.host:<requesting_host:port>  <destination_host:port>
 ```
 
 ## API 
@@ -13,15 +13,18 @@ com.roo.host:<host>  <host:port>
 ```
 curl -X PUT -d'test data' http://localhost:6299/roo/v1/kv/test
 ```
+* Returns a json object { "ok" : true} if succeded
 ### Get a key from the store
 ```
 curl -X GET http://localhost:6299/roo/v1/kv/test
 ```
+* Returns the raw bytes
 ### Query the store (SCAN query)
 ```
-curl -X GET http://localhost:6299/roo/v1/kvs/te
+curl -X GET http://localhost:6299/roo/v1/kvs/te #Searches prefix te
+curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything
 ```
-* Use ```window.atob("dGVzdCBkYXRh")``` in javascript or just json.Unmarshall with []byte in Golang Go
+* Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
 
 ## TODO
 ```
