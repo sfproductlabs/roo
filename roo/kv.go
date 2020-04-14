@@ -206,7 +206,7 @@ func (kvs *KvService) connect() error {
 						Group:   kvs.AppConfig.Cluster.Group,
 						Binding: kvs.AppConfig.Cluster.Binding,
 					}
-					if csdata, err := json.Marshal(cs); err != nil {
+					if _, err := json.Marshal(cs); err != nil {
 						rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
 						continue
 					} else {
@@ -265,9 +265,11 @@ func (kvs *KvService) connect() error {
 rejoin:
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v\n", err)
+		if alreadyJoined {
+			time.Sleep(time.Duration(1) * time.Second)
+			goto rejoin
+		}
 		os.Exit(1)
-	} else {
-		goto rejoin
 	}
 	kvs.nh = nh
 	kvs.Configuration.Session = kvs
