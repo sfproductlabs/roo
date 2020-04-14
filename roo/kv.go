@@ -264,7 +264,7 @@ func (kvs *KvService) connect() error {
 	//TODO: Exit service if no peers after 5 minutes (will cause a restart and rejoin in swarm)?
 rejoin:
 	if err := nh.StartOnDiskCluster(initialMembers, alreadyJoined, NewDiskKV, rc); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v\n", err)
+		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v, members: %v\n", err, initialMembers)
 		if alreadyJoined {
 			time.Sleep(time.Duration(1) * time.Second)
 			goto rejoin
