@@ -152,6 +152,7 @@ func (kvs *KvService) connect() error {
 
 	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
 	initialMembers := map[uint64]string{}
+	initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 	olderThan := 0
 	alreadyJoined := false
 	waited := 0
@@ -251,7 +252,6 @@ func (kvs *KvService) connect() error {
 	}
 
 	if len(initialMembers) == 0 {
-		initialMembers[kvs.AppConfig.Cluster.NodeID] = kvs.AppConfig.Cluster.Binding + KV_PORT
 		alreadyJoined = false
 	}
 
