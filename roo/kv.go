@@ -114,7 +114,8 @@ func (kvs *KvService) connect() error {
 	kvs.Configuration.Hosts = tmp
 	rlog.Infof("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
-	kvs.AppConfig.Cluster.NodeID = uint64(rand.Intn(65534) + 1)
+	//kvs.AppConfig.Cluster.NodeID = uint64(rand.Intn(65534) + 1)
+	kvs.AppConfig.Cluster.NodeID = rand.Uint64()
 
 	// https://github.com/golang/go/issues/17393
 	if runtime.GOOS == "darwin" {
