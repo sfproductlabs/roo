@@ -2,7 +2,7 @@
 
 This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops.
 
-## Complete autoconfig of docker swarm
+## Complete autoconfig of docker swarm services
 (Coming momentarily) @psytron
 
 ## Going Manual
