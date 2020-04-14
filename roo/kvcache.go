@@ -28,6 +28,9 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 		return nil, err
 	} else {
 		rlog.Infof("[GET] Cache query key: %s, result: %s\n", name, result)
+		if len(result.([]byte)) == 0 {
+			return nil, ErrCacheMiss
+		}
 		return result.([]byte), nil
 	}
 }
