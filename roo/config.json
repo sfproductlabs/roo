@@ -16,6 +16,7 @@
     "Debug": true,
     "Cluster": {
         "DNS": "localhost",
+        "Resolver": "",
         "Group": 1,
         "Binding" : "",
         "Service": {

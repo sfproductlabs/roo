@@ -94,9 +94,12 @@ func main() {
 		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
 	}
 
-	////////////////////////////////////////OVERRIDE CLUSTER DNS FROM ENV
+	////////////////////////////////////////OVERRIDE CLUSTER DNS/RESOLVER FROM ENV
 	if envDNS := os.Getenv(ENV_ROO_DNS); envDNS != "" {
 		configuration.Cluster.DNS = envDNS
+	}
+	if envResolver := os.Getenv(ENV_ROO_RESOLVER); envResolver != "" {
+		configuration.Cluster.Resolver = envResolver
 	}
 
 	////////////////////////////////////////RANDOM DELAY

@@ -74,7 +74,20 @@ import (
 //////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs
 func (kvs *KvService) connect() error {
-	kvs.Configuration.Hosts, _ = net.LookupHost(kvs.AppConfig.Cluster.DNS)
+	if kvs.AppConfig.Cluster.Resolver == "" {
+		kvs.Configuration.Hosts, _ = net.LookupHost(kvs.AppConfig.Cluster.DNS)
+	} else {
+		r := &net.Resolver{
+			PreferGo: false,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{
+					Timeout: time.Millisecond * time.Duration(10000),
+				}
+				return d.DialContext(ctx, "udp", kvs.AppConfig.Cluster.Resolver+":53")
+			},
+		}
+		kvs.Configuration.Hosts, _ = r.LookupHost(context.Background(), kvs.AppConfig.Cluster.DNS)
+	}
 	rlog.Infof("Cluster: Possible Roo IPs: %s\n", kvs.Configuration.Hosts)
 	myIPs, _ := getMyIPs(true)
 	rlog.Infof("Cluster: My IPs: %s\n", getIPsString(myIPs))

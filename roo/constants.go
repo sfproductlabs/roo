@@ -5,6 +5,7 @@ import "github.com/lni/dragonboat/v3/logger"
 //////////////////////////////////////// Constants
 const (
 	ENV_ROO_DNS        string = "ROO_DNS"
+	ENV_ROO_RESOLVER   string = "ROO_RESOLVER"
 	BOOTSTRAP_DELAY_MS int    = 7000 //In milliseconds
 	BOOTSTRAP_WAIT_S   int    = 7
 	PONG               string = "pong"

@@ -103,11 +103,12 @@ type Service struct {
 }
 
 type Cluster struct {
-	Service *Service
-	DNS     string
-	Binding string
-	Group   uint64
-	NodeID  uint64
+	Service  *Service
+	DNS      string
+	Resolver string
+	Binding  string
+	Group    uint64
+	NodeID   uint64
 }
 
 type KvService struct { //Implements 'session'
