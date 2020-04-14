@@ -316,7 +316,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 
 //////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(10*time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(60*time.Second))
 	defer cancel()
 	r = r.WithContext(ctx)
 	switch s.ServiceType {
