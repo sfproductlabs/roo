@@ -15,7 +15,7 @@ curl -X PUT -d'test data' http://localhost:6299/roo/v1/kv/test
 ```
 * Returns a json object { "ok" : true} if succeded
 #### A Real Example
-Put in a test route where our host. For our example we are serving goole.com at our public endpoint, and routing to a swarm service with an endpoint inside our network on port 9001. The swarm stack is cool, the swarm service name is game. In docker swarm world this equates to a mesh network load balanced DNS record of tasks.cool_game. (you'll need to find yours to get it working). The overall result to add this to our routing tables is:
+**Put in a test route**. For our example we are serving goole.com at our public endpoint, and routing to a swarm service with an endpoint inside our network on port 9001. The swarm stack is cool, the swarm service name is game. In docker swarm world this equates to a mesh network load balanced DNS record of tasks.cool_game. (you'll need to find yours to get it working). The overall result to add this to our routing tables is:
 
 ```curl -X PUT -d'http://tasks.cool_game:9001' http://localhost:6299/roo/v1/kv/com.roo.host:google.com:443```
 
