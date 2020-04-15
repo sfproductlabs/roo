@@ -385,7 +385,9 @@ func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
 	}
 	if c, ok := cmd.([]byte); ok {
 		dataKV.Action = GET
-		json.Unmarshal(c, dataKV) //Ignore any errors
+		if err := json.Unmarshal(c, dataKV); err != nil {
+			dataKV.Key = string(c)
+		}
 	}
 	if c, ok := cmd.(*KVAction); ok {
 		dataKV = c

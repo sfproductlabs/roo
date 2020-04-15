@@ -28,14 +28,15 @@ var CertCache = cache.New(3600*time.Second, 90*time.Second)
 // Get reads a certificate data from the specified kv.
 func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	if p, found := CertCache.Get(name); found {
-		return *p.(*[]byte), nil
+		return p.([]byte), nil
 	}
-	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, KVAction{Action: GET, Key: name})
+	keyname := CACHE_PREFIX + name
+	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, keyname)
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
 	}
-	rlog.Infof("[GET] Cache query key: %s, bytes returned: %d\n", name, len(result.([]byte)))
+	//rlog.Infof("[GET] Cache query key: %s, bytes returned: %d\n", keyname, len(result.([]byte)))
 	if len(result.([]byte)) == 0 {
 		return nil, autocert.ErrCacheMiss
 	}
@@ -46,9 +47,10 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 
 // Put writes the certificate data to the specified kv.
 func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
+	keyname := CACHE_PREFIX + name
 	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
 	kv := &KVAction{
-		Key: name,
+		Key: keyname,
 		Val: data,
 	}
 	kvdata, err := json.Marshal(kv)
