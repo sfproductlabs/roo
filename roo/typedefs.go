@@ -133,6 +133,8 @@ type Configuration struct {
 	Cluster                  Cluster
 	ClusterDNS               string
 	Swarm                    bool
+	SwarmRefreshSeconds      int
+	SwarmRole                string
 	Notify                   []Service
 	Consume                  []Service
 	API                      *Service

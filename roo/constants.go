@@ -25,15 +25,17 @@ const (
 	ACME_STAGING      string = "https://acme-staging-v02.api.letsencrypt.org/directory"
 	ACME_PRODUCTION   string = "https://acme-v02.api.letsencrypt.org/directory"
 
-	CACHE_PREFIX   = "com.roo.cache:"
-	HOST_PREFIX    = "com.roo.host:"
-	CLUSTER_PREFIX = "com.roo.cluster:"
-	PEER_PREFIX    = "com.roo.peer:"
-	TEMP_PREFIX    = "com.roo.temp:"
-	ROO_STARTED    = "com.roo.started"
+	CACHE_PREFIX         = "com.roo.cache:"
+	HOST_PREFIX          = "com.roo.host:"
+	CLUSTER_PREFIX       = "com.roo.cluster:"
+	PEER_PREFIX          = "com.roo.peer:"
+	SWARM_MANAGER_PREFIX = "com.roo.swarm.manager:"
+	SWARM_WORKER_PREFIX  = "com.roo.swarm.worker:"
+	ROO_STARTED          = "com.roo.started"
 
 	GROUP_POSTFIX = ":group"
 	NODE_POSTFIX  = ":node"
+	ROLE_POSTFIX  = ":role"
 )
 
 //Service calls

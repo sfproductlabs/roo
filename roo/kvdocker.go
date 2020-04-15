@@ -48,8 +48,63 @@
  */
 package main
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"time"
 
-func (i *KvService) swarm() {
+	"github.com/lni/goutils/syncutil"
+)
+
+func (kvs *KvService) updateFromSwarm() {
 	fmt.Println(GetDockerTasks())
+	// //Add node's role
+	// if kvs.AppConfig.SwarmRole != "" {
+	// 	rolePrefix := SWARM_WORKER_PREFIX
+	// 	if kvs.AppConfig.SwarmRole == "manager" {
+	// 		rolePrefix = SWARM_MANAGER_PREFIX
+	// 	}
+	// 	action := &KVAction{
+	// 		Action: PUT,
+	// 		Key:    rolePrefix + kvs.AppConfig.Cluster.Binding,
+	// 		Val:    []byte{},
+	// 	}
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// 	defer cancel()
+	// 	kvs.execute(ctx, action)
+	// }
+}
+
+func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
+	if kvs.AppConfig.SwarmRefreshSeconds < 1 {
+		return nil
+	}
+	leaderStopper := syncutil.NewStopper()
+	leaderStopper.RunWorker(func() {
+		ticker := time.NewTicker(time.Duration(kvs.AppConfig.SwarmRefreshSeconds) * time.Second) //Update routes in kv from swarm every 60 seconds
+
+		for {
+			select {
+			case <-ticker.C:
+				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
+				if leader == kvs.AppConfig.Cluster.NodeID {
+					action := &KVAction{
+						Action: SCAN,
+						Key:    SWARM_MANAGER_PREFIX,
+					}
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration()*time.Second)
+					defer cancel()
+					result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+					if err == nil {
+						items := result.(map[string][]byte)
+
+					}
+				}
+			case <-leaderStopper.ShouldStop():
+				return
+			}
+		}
+	})
+	return leaderStopper
+
 }

@@ -2,6 +2,7 @@
     "SchemaVersion": 1,
     "ApiVersion": 1,
     "Swarm": false,
+    "SwarmRefreshSeconds": 30,
     "IgnoreInsecureTLS": true,
     "ProxyDailyLimit": 0,
     "ProxyDailyLimitChecker": "memory",

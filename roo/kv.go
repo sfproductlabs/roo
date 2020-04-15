@@ -293,17 +293,20 @@ rejoin:
 	go func() {
 		for {
 			kvs.AppConfig.Cluster.Service.Started = time.Now().UnixNano()
-			action := &KVAction{
-				Action: PUT,
-				Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
-				Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-			if _, err := kvs.execute(ctx, action); err != nil {
-				rlog.Infof("Adding node to kv didn't happen yet: %s probably still waiting for cluster\n", err)
-				time.Sleep(time.Duration(7) * time.Second)
-				continue
+			//Add node to kv store
+			{
+				action := &KVAction{
+					Action: PUT,
+					Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
+					Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				if _, err := kvs.execute(ctx, action); err != nil {
+					rlog.Infof("Adding node to kv didn't happen yet: %s probably still waiting for cluster\n", err)
+					time.Sleep(time.Duration(7) * time.Second)
+					continue
+				}
 			}
 			go func() {
 				//Delay started to allow bootstrapped nodes to join in time
@@ -328,9 +331,10 @@ rejoin:
 				}
 			}()
 			rlog.Infof("[[CREATED NODE]]\n")
-			//Only respond to api requests once we have been created
+			//Update the routes once per node on boot
 			if kvs.AppConfig.Swarm {
-				go kvs.swarm()
+				kvs.updateFromSwarm()
+				kvs.runSwarmWorker()
 			}
 			break
 		}

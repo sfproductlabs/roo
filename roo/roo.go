@@ -101,8 +101,14 @@ func main() {
 	if envResolver := os.Getenv(ENV_ROO_RESOLVER); envResolver != "" {
 		configuration.Cluster.Resolver = envResolver
 	}
-	if os.Getenv(ENV_ROO_SWARM) == "true" {
-		configuration.Swarm = true
+
+	//////////////////////////////////////// SETUP CONFIG VARIABLES & OVERRIDES
+	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
+	if configuration.AllowOrigin == "" {
+		configuration.AllowOrigin = "*"
+	}
+	if configuration.SwarmRefreshSeconds == 0 {
+		configuration.SwarmRefreshSeconds = 60
 	}
 
 	////////////////////////////////////////FIXED DELAY
@@ -141,14 +147,6 @@ func main() {
 		}
 	}
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
-
-	////////////////////////////////////////SETUP ORIGIN
-	if configuration.AllowOrigin == "" {
-		configuration.AllowOrigin = "*"
-	}
-
-	//////////////////////////////////////// SETUP CONFIG VARIABLES
-	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
 
 	//////////////////////////////////////// MAX CHANNELS
 	connc := make(chan struct{}, configuration.MaximumConnections)
