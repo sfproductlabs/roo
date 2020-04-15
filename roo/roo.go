@@ -153,6 +153,7 @@ func main() {
 	}
 
 	//////////////////////////////////////// MAX CALLS
+	// This should prevent DoS - or help
 	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
 		c := cache.New(24*time.Hour, 10*time.Minute)
 		configuration.ProxyDailyLimitCheck = func(ip string) uint64 {

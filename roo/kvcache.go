@@ -37,6 +37,7 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 		return nil, err
 	}
 	if len(result.([]byte)) == 0 {
+		//TODO: Add malware tracking tool here
 		rlog.Infof("[GET] Cache miss, key: %s\n", keyname)
 		return nil, autocert.ErrCacheMiss
 	}
