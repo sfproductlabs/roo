@@ -30,15 +30,16 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	if p, found := CertCache.Get(name); found {
 		return *p.(*[]byte), nil
 	}
-	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(name))
+	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, KVAction{Action: GET, Key: name})
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
 	}
-	rlog.Infof("[GET] Cache query key: %s, result: %s\n", name, result)
+	rlog.Infof("[GET] Cache query key: %s, bytes returned: %d\n", name, len(result.([]byte)))
 	if len(result.([]byte)) == 0 {
 		return nil, autocert.ErrCacheMiss
 	}
+	CertCache.Set(name, result, cache.DefaultExpiration)
 	return result.([]byte), nil
 
 }

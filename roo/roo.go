@@ -71,7 +71,7 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 46")
+	fmt.Println("Roo. Version 50")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
