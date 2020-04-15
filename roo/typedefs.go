@@ -7,6 +7,7 @@ import (
 
 	"github.com/gocql/gocql"
 	"github.com/lni/dragonboat/v3"
+	"github.com/lni/goutils/syncutil"
 	"github.com/nats-io/nats.go"
 	"github.com/patrickmn/go-cache"
 )
@@ -115,6 +116,7 @@ type Cluster struct {
 type KvService struct { //Implements 'session'
 	Configuration *Service
 	nh            *dragonboat.NodeHost
+	swarmUpdater  *syncutil.Stopper
 	AppConfig     *Configuration
 }
 
@@ -128,6 +130,7 @@ type NatsService struct { //Implements 'session'
 type Configuration struct {
 	SchemaVersion            int
 	ApiVersion               int
+	ApiVersionString         string
 	AcmeStaging              bool
 	IgnoreInsecureTLS        bool
 	Cluster                  Cluster

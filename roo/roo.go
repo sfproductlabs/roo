@@ -103,7 +103,7 @@ func main() {
 	}
 
 	//////////////////////////////////////// SETUP CONFIG VARIABLES & OVERRIDES
-	apiVersion := "v" + strconv.Itoa(configuration.ApiVersion)
+	configuration.ApiVersionString = "v" + strconv.Itoa(configuration.ApiVersion)
 	if configuration.AllowOrigin == "" {
 		configuration.AllowOrigin = "*"
 	}
@@ -173,7 +173,7 @@ func main() {
 	//////////////////////////////////////// API ON :6299 (by default)
 	rtr := mux.NewRouter()
 	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
-	rtr.HandleFunc("/roo/"+apiVersion, func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		w.Header().Set("access-control-allow-credentials", "true")
 		w.Header().Set("access-control-allow-headers", "Authorization,Accept,User")
@@ -188,7 +188,7 @@ func main() {
 		w.Write([]byte("PONG"))
 	}).Methods("GET")
 	//////////////////////////////////////// STATUS
-	rtr.HandleFunc("/roo/"+apiVersion+"/status", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/status", func(w http.ResponseWriter, r *http.Request) {
 		status := &ClusterStatus{
 			Client:       getIP(r),
 			Binding:      configuration.Cluster.Binding,
@@ -206,7 +206,7 @@ func main() {
 		w.Write(json)
 	}).Methods("GET")
 	//////////////////////////////////////// JOIN
-	rtr.HandleFunc("/roo/"+apiVersion+"/join", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/join", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -226,7 +226,7 @@ func main() {
 		}
 	}).Methods("POST")
 	//////////////////////////////////////// REMOVE NODE
-	rtr.HandleFunc("/roo/"+apiVersion+"/remove", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/remove", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -246,7 +246,7 @@ func main() {
 		}
 	}).Methods("POST")
 	//////////////////////////////////////// RESCUE (REMOVE ALL NODES)
-	rtr.HandleFunc("/roo/"+apiVersion+"/rescue", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/rescue", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -266,7 +266,7 @@ func main() {
 		}
 	}).Methods("POST")
 	//////////////////////////////////////// SCAN KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kvs{key:.*}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/kvs{key:.*}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -286,7 +286,7 @@ func main() {
 		}
 	}).Methods("GET")
 	//////////////////////////////////////// GET KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)
@@ -306,7 +306,7 @@ func main() {
 		}
 	}).Methods("GET")
 	//////////////////////////////////////// PUT KV
-	rtr.HandleFunc("/roo/"+apiVersion+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/kv/{key}", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
 			params := mux.Vars(r)

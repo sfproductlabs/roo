@@ -151,7 +151,6 @@ func (kvs *KvService) connect() error {
 		panic(err)
 	}
 
-	apiVersion := "v" + strconv.Itoa(kvs.AppConfig.ApiVersion)
 	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
 	olderThan := 0
 	bootstrap := false
@@ -167,7 +166,7 @@ func (kvs *KvService) connect() error {
 				continue
 			}
 		getNodeStatus:
-			r, _ := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/status", nil) //TODO: https
+			r, _ := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/status", nil) //TODO: https
 			ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 			defer cancel()
 			r = r.WithContext(ctx)
@@ -209,7 +208,7 @@ func (kvs *KvService) connect() error {
 					checkedBootstrapped := 0
 				checkBootstrap:
 					//Check to see if cluster already bootstrapped (YES: join, NO: bootstrap)
-					r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+apiVersion+"/kv/"+ROO_STARTED, nil)
+					r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/kv/"+ROO_STARTED, nil)
 					resp, err = (&http.Client{}).Do(r)
 					if err == nil {
 						defer resp.Body.Close()
@@ -228,7 +227,7 @@ func (kvs *KvService) connect() error {
 							continue
 						} else {
 							time.Sleep(time.Duration(1) * time.Second)
-							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+apiVersion+"/join", bytes.NewBuffer(csdata))
+							req, err := http.NewRequest("POST", "http://"+h+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/join", bytes.NewBuffer(csdata))
 							if err != nil {
 								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
 								continue
@@ -333,8 +332,8 @@ rejoin:
 			rlog.Infof("[[CREATED NODE]]\n")
 			//Update the routes once per node on boot
 			if kvs.AppConfig.Swarm {
-				kvs.updateFromSwarm()
-				kvs.runSwarmWorker()
+				kvs.updateFromSwarm(true)
+				kvs.swarmUpdater = kvs.runSwarmWorker()
 			}
 			break
 		}

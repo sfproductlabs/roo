@@ -50,39 +50,44 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/lni/goutils/syncutil"
 )
 
-func (kvs *KvService) updateFromSwarm() {
-	fmt.Println(GetDockerTasks())
-	// //Add node's role
-	// if kvs.AppConfig.SwarmRole != "" {
-	// 	rolePrefix := SWARM_WORKER_PREFIX
-	// 	if kvs.AppConfig.SwarmRole == "manager" {
-	// 		rolePrefix = SWARM_MANAGER_PREFIX
-	// 	}
-	// 	action := &KVAction{
-	// 		Action: PUT,
-	// 		Key:    rolePrefix + kvs.AppConfig.Cluster.Binding,
-	// 		Val:    []byte{},
-	// 	}
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	// 	defer cancel()
-	// 	kvs.execute(ctx, action)
-	// }
+func (kvs *KvService) updateFromSwarm(updateRole bool) []map[string]string {
+	tasks, err := GetDockerTasks()
+	if updateRole {
+		//Add node's role
+		rolePrefix := SWARM_WORKER_PREFIX
+		if err == nil {
+			rolePrefix = SWARM_MANAGER_PREFIX
+		}
+		action := &KVAction{
+			Action: PUT,
+			Key:    rolePrefix + kvs.AppConfig.Cluster.Binding,
+			Val:    []byte{},
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		kvs.execute(ctx, action)
+	}
+	return tasks
 }
 
 func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 	if kvs.AppConfig.SwarmRefreshSeconds < 1 {
 		return nil
 	}
+	if kvs.AppConfig.SwarmRefreshSeconds < 2 {
+		kvs.AppConfig.SwarmRefreshSeconds = 3
+	}
 	leaderStopper := syncutil.NewStopper()
 	leaderStopper.RunWorker(func() {
 		ticker := time.NewTicker(time.Duration(kvs.AppConfig.SwarmRefreshSeconds) * time.Second) //Update routes in kv from swarm every 60 seconds
-
+		regex := regexp.MustCompile(`\.update\.(.*)`)
 		for {
 			select {
 			case <-ticker.C:
@@ -92,12 +97,28 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 						Action: SCAN,
 						Key:    SWARM_MANAGER_PREFIX,
 					}
-					ctx, cancel := context.WithTimeout(context.Background(), time.Duration()*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(kvs.AppConfig.SwarmRefreshSeconds-1)*time.Second)
 					defer cancel()
 					result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
 					if err == nil {
 						items := result.(map[string][]byte)
-
+						for i, _ := range items {
+							matches := regex.FindStringSubmatch(i)
+							mi := len(matches)
+							if mi < 1 {
+								continue
+							}
+							r, _ := http.NewRequest("POST", "http://"+matches[0]+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/swarm", nil) //TODO: https
+							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
+							defer cancel()
+							r = r.WithContext(ctx)
+							client := &http.Client{}
+							resp, err := client.Do(r)
+							//Do only once
+							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+								break
+							}
+						}
 					}
 				}
 			case <-leaderStopper.ShouldStop():
