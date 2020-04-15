@@ -7,7 +7,7 @@ This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of
 ```
 docker node update --label-add load_balancer=true docker1-prod
 ```
-* Run [this](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done
+* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
