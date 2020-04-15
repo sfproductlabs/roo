@@ -50,6 +50,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"regexp"
 	"time"
@@ -57,7 +58,7 @@ import (
 	"github.com/lni/goutils/syncutil"
 )
 
-func (kvs *KvService) updateFromSwarm(updateRole bool) []map[string]string {
+func (kvs *KvService) updateFromSwarm(updateRole bool) error {
 	tasks, err := GetDockerTasks()
 	if updateRole {
 		//Add node's role
@@ -72,11 +73,15 @@ func (kvs *KvService) updateFromSwarm(updateRole bool) []map[string]string {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		kvs.execute(ctx, action)
+		kvs.execute(ctx, action) //just try and write
 	}
-	return tasks
+	if err == nil {
+		fmt.Println(tasks)
+	}
+	return err
 }
 
+// The leader raft node delegates any single master node to update the routes every X seconds
 func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 	if kvs.AppConfig.SwarmRefreshSeconds < 1 {
 		return nil
@@ -86,7 +91,7 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 	}
 	leaderStopper := syncutil.NewStopper()
 	leaderStopper.RunWorker(func() {
-		ticker := time.NewTicker(time.Duration(kvs.AppConfig.SwarmRefreshSeconds) * time.Second) //Update routes in kv from swarm every 60 seconds
+		ticker := time.NewTicker(time.Duration(kvs.AppConfig.SwarmRefreshSeconds) * time.Second)
 		var regex = regexp.MustCompile(`.*\:(.+)`)
 		for {
 			select {
@@ -115,6 +120,7 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 							resp, err := client.Do(r)
 							//Do only once
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+								rlog.Infof("Swarm Routes Successfully Integrated")
 								break
 							}
 						}

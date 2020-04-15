@@ -325,7 +325,15 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	}).Methods("PUT")
-	//API INTERNAL
+	//////////////////////////////////////// UPDATE SWARM
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/swarm", func(w http.ResponseWriter, r *http.Request) {
+		if err := serveWithArgs(&configuration, &w, r, &ServiceArgs{ServiceType: SERVE_POST_SWARM}); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+		}
+	}).Methods("POST")
+
+	//////////////////////////////////////// SETUP API - INTERNAL NETWORK PORT :6299 (default) AS NOT EXPOSED
 	//TODO: ADD SSL SUPPORT
 	go http.ListenAndServe(API_PORT, rtr)
 

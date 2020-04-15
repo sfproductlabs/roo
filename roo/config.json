@@ -1,7 +1,7 @@
 {
     "SchemaVersion": 1,
     "ApiVersion": 1,
-    "Swarm": false,
+    "Swarm": true,
     "SwarmRefreshSeconds": 30,
     "IgnoreInsecureTLS": true,
     "ProxyDailyLimit": 0,

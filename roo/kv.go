@@ -367,6 +367,14 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 	//TODO
 	// SERVE_POST_REMOVE = iota
 	// SERVE_POST_RESCUE = iota
+	case SERVE_POST_SWARM:
+		writer := *w
+		if err := kvs.updateFromSwarm(false); err != nil {
+			return err
+		}
+		writer.WriteHeader(http.StatusOK)
+		writer.Write([]byte{})
+		return nil
 	case SERVE_POST_JOIN:
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
