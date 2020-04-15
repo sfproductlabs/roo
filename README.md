@@ -75,6 +75,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
 ## TODO
+- [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
 * [ ] Downscale swarm cleaner (removing a container should remove the raft address and nodehost, could run a leader process like in dcrontab) @psytron or link with docker connector
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
