@@ -36,8 +36,8 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
 	}
-	//rlog.Infof("[GET] Cache query key: %s, bytes returned: %d\n", keyname, len(result.([]byte)))
 	if len(result.([]byte)) == 0 {
+		rlog.Infof("[GET] Cache miss, key: %s\n", keyname)
 		return nil, autocert.ErrCacheMiss
 	}
 	CertCache.Set(name, result, cache.DefaultExpiration)
