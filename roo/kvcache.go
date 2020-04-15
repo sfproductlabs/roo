@@ -65,6 +65,7 @@ func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 // Delete removes the specified kv.
 func (kvs KvService) Delete(ctx context.Context, name string) error {
 	CertCache.Delete(name)
-	rlog.Warningf("[kvcache] Delete kv not implemented\n")
+	kvs.Put(ctx, name, []byte{})
+	//TODO: Complete delete implementation, bit hacky atm
 	return nil
 }
