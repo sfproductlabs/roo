@@ -7,11 +7,13 @@ const (
 	ENV_ROO_DNS         string = "ROO_DNS"
 	ENV_ROO_RESOLVER    string = "ROO_RESOLVER"
 	ENV_ROO_START_DELAY string = "ROO_START_DELAY"
-	BOOTSTRAP_DELAY_MS  int    = 7000 //In milliseconds
-	BOOTSTRAP_WAIT_S    int    = 60
-	PONG                string = "pong"
-	API_LIMIT_REACHED   string = "API Limit Reached"
-	HOST_NOT_FOUND      string = "Host Not Found"
+	ENV_ROO_SWARM       string = "ROO_SWARM"
+
+	BOOTSTRAP_DELAY_MS int    = 7000 //In milliseconds
+	BOOTSTRAP_WAIT_S   int    = 60
+	PONG               string = "pong"
+	API_LIMIT_REACHED  string = "API Limit Reached"
+	HOST_NOT_FOUND     string = "Host Not Found"
 
 	MEMORY_CHECKER    string = "memory"
 	SERVICE_TYPE_NATS string = "nats"

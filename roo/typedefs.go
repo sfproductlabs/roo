@@ -126,30 +126,23 @@ type NatsService struct { //Implements 'session'
 }
 
 type Configuration struct {
-	Domains                  []string //Domains in Trust, LetsEncrypt domains
-	StaticDirectory          string   //Static FS Directory (./public/)
-	UseLocalTLS              bool
+	SchemaVersion            int
+	ApiVersion               int
 	IgnoreInsecureTLS        bool
 	Cluster                  Cluster
 	ClusterDNS               string
+	Swarm                    bool
 	Notify                   []Service
 	Consume                  []Service
-	API                      Service
-	PrefixPrivateHash        string
-	ProxyUrl                 string
+	API                      *Service
 	ProxyUrlFilter           string
 	IgnoreProxyOptions       bool
 	ProxyForceJson           bool
-	ProxyPort                string
-	ProxyPortTLS             string
-	ProxyPortRedirect        string
 	ProxyDailyLimit          uint64
 	ProxyDailyLimitChecker   string //Service, Ex. casssandra
 	ProxyDailyLimitCheck     func(string) uint64
 	ProxyCache               *cache.Cache
 	ProxySharedBufferPool    httputil.BufferPool
-	SchemaVersion            int
-	ApiVersion               int
 	Debug                    bool
 	UrlFilter                string
 	UrlFilterMatchGroup      int

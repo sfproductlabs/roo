@@ -94,13 +94,17 @@ func main() {
 		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
 	}
 
-	////////////////////////////////////////OVERRIDE CLUSTER DNS/RESOLVER FROM ENV
+	////////////////////////////////////////CONFIGURATION OVERRIDES
 	if envDNS := os.Getenv(ENV_ROO_DNS); envDNS != "" {
 		configuration.Cluster.DNS = envDNS
 	}
 	if envResolver := os.Getenv(ENV_ROO_RESOLVER); envResolver != "" {
 		configuration.Cluster.Resolver = envResolver
 	}
+	if os.Getenv(ENV_ROO_SWARM) == "true" {
+		configuration.Swarm = true
+	}
+
 	////////////////////////////////////////FIXED DELAY
 
 	if envStartDelay, _ := strconv.ParseInt(os.Getenv(ENV_ROO_START_DELAY), 10, 64); envStartDelay > 0 {
@@ -348,7 +352,7 @@ func main() {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
 			}
 			//SET THE DEFAULT API TO RUN THROUGH THE KV
-			configuration.API = *s.Service
+			configuration.API = s.Service
 		default:
 			panic("[ERROR] Cluster not implemented\n")
 		}
@@ -489,7 +493,7 @@ func main() {
 // Serve APIs
 ////////////////////////////////////////
 func serveWithArgs(c *Configuration, w *http.ResponseWriter, r *http.Request, args *ServiceArgs) error {
-	s := &c.API
+	s := c.API
 	if s != nil && s.Session != nil {
 		if err := s.Session.serve(w, r, args); err != nil {
 			if c.Debug {

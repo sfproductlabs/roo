@@ -329,6 +329,9 @@ rejoin:
 			}()
 			rlog.Infof("[[CREATED NODE]]\n")
 			//Only respond to api requests once we have been created
+			if kvs.AppConfig.Swarm {
+				go kvs.swarm()
+			}
 			break
 		}
 	}()
@@ -349,7 +352,7 @@ func (i *KvService) listen() error {
 }
 
 func (i *KvService) auth(s *ServiceArgs) error {
-	return fmt.Errorf("Not implemented")
+	return fmt.Errorf("[ERROR] KV auth not implemented")
 }
 
 //////////////////////////////////////// BIDIRECTIONAL COMMS
