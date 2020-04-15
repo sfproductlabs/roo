@@ -4,7 +4,11 @@ This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of
 
 If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
 
-## Getting Started
+## Getting Started (on swarm)
+* Create the default network, for example:
+```
+docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 
+```
 * Add label to the nodes you want to run it on
 ```
 docker node update --label-add load_balancer=true docker1-prod
@@ -13,6 +17,11 @@ docker node update --label-add load_balancer=true docker1-prod
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
+## Getting Started (on docker)
+* Just run it (or even better use the roo-docker-compose file)
+```
+docker run sfproductlabs/roo:latest
+```
 
 ## Complete autoconfig of docker swarm services
 (Coming momentarily) @psytron
@@ -20,9 +29,14 @@ docker node update --label-add load_balancer=true docker1-prod
 ## Going Manual
 Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo.
 
+### Building from source
+* You need to get the dependencies. Check the roo-docker-compose.yml file for a current list.
+* Run ```make``` in the root directory (not the roo directory).
+
 ### Schema Definitions
 
 #### Adding a route to the routing table
+* Use the Put API below
 ```
 com.roo.host:<requesting_host<:port (optional)>:scheme>  <destination_url>
 ```
