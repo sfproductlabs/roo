@@ -71,7 +71,7 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 44")
+	fmt.Println("Roo. Version 46")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
@@ -413,12 +413,16 @@ func main() {
 	//////////////////////////////////////// PROXY EVERYTHING
 	configuration.ProxyCache = cache.New(60*time.Second, 90*time.Second)
 	configuration.ProxySharedBufferPool = newBufferPool()
+	acmeURL := ACME_PRODUCTION
+	if configuration.AcmeStaging || os.Getenv(ENV_ROO_ACME_STAGING) == "true" {
+		acmeURL = ACME_STAGING
+	}
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		Cache:      configuration.Cluster.Service.Session.(*KvService),
 		HostPolicy: func(context.Context, string) error { return nil }, //Allow everything
 		Client: &acme.Client{
-			DirectoryURL: ACME_STAGING,
+			DirectoryURL: acmeURL,
 		},
 	}
 	server := &http.Server{ // HTTP REDIR SSL RENEW

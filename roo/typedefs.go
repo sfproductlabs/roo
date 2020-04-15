@@ -136,6 +136,7 @@ type Configuration struct {
 	Consume                  []Service
 	API                      Service
 	PrefixPrivateHash        string
+	AcmeStaging              bool
 	ProxyUrl                 string
 	ProxyUrlFilter           string
 	IgnoreProxyOptions       bool
