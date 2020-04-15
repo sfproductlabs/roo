@@ -91,7 +91,8 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
 ## TODO
-- [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
+* [ ] Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)
+* [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
 * [ ] Downscale swarm cleaner (removing a container should remove the raft address and nodehost, could run a leader process like in dcrontab) @psytron or link with docker connector
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
@@ -99,6 +100,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 * [ ] SSL in API
 * [ ] HTTP for Proxying (Only SSL Supported atm)
 * [ ] Auto downgrade 
+* [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
 
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)

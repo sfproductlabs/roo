@@ -11,15 +11,18 @@ import (
 	//"time"
 )
 
-func GetDockerTasks() []map[string]string {
+func GetDockerTasks() ([]map[string]string, error) {
 	/////////////// CONNECT TO SOCKET
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("Couldn't connect to docker socket")
 	}
 	taskFilter := filters.NewArgs()
 	tasks, err := cli.TaskList(ctx, types.TaskListOptions{Filters: taskFilter})
+	if err != nil {
+		return nil, err
+	}
 
 	/////////////////////// SCAN TASKS
 	var conz []map[string]string
@@ -35,5 +38,5 @@ func GetDockerTasks() []map[string]string {
 			}
 		}
 	}
-	return conz
+	return conz, nil
 }

@@ -27,9 +27,11 @@ services:
         condition: any
     environment:
       - SWARM_NODE={{.Node.Hostname}}
+      - SWARM_ROLE={{.Node.Role}}
       - ROO_DNS=tasks.roo_roo.
       - ROO_RESOLVER=127.0.0.11
       - ROO_START_DELAY=10
+      - ROO_ACME_STAGING=true
 
 networks:
   forenet:
