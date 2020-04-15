@@ -14,11 +14,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // ErrCacheMiss is returned when a certificate is not found in cache.
-var ErrCacheMiss = errors.New("Cache miss")
+//var ErrCacheMiss = errors.New("Cache miss")
 
 // Get reads a certificate data from the specified kv.
 func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
@@ -26,13 +27,13 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
-	} else {
-		rlog.Infof("[GET] Cache query key: %s, result: %s\n", name, result)
-		if len(result.([]byte)) == 0 {
-			return nil, ErrCacheMiss
-		}
-		return result.([]byte), nil
 	}
+	rlog.Infof("[GET] Cache query key: %s, result: %s\n", name, result)
+	if len(result.([]byte)) == 0 {
+		return nil, autocert.ErrCacheMiss
+	}
+	return result.([]byte), nil
+
 }
 
 // Put writes the certificate data to the specified kv.
