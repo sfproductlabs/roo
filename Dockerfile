@@ -7,7 +7,7 @@ FROM debian:latest
 EXPOSE 6299 6300 443 80
 
 # update packages and install required ones
-RUN apt update && apt upgrade -y && apt install -y \
+RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
 #  golang \
 #  git \
 #  libssl-dev \
@@ -15,16 +15,10 @@ RUN apt update && apt upgrade -y && apt install -y \
   dnsutils \
   jq \
   librocksdb-dev \
+  ca-certificates \
   && apt autoclean -y \
-  && apt autoremove -y
-
-# apt cleanup
-# RUN apt autoclean -y && apt autoremove -y
-
-# build app instead of just publishing
-# RUN go get github.com/dioptre/roo
-# RUN go install github.com/dioptre/roo
-# RUN go build
+  && apt autoremove -y \
+  && rm -rf /var/lib/apt/lists/* 
 
 
 ####################################################################################

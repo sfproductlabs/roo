@@ -14,39 +14,44 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
+
+	"golang.org/x/crypto/acme/autocert"
+
 	"time"
 
 	"github.com/patrickmn/go-cache"
 )
 
-// ErrCacheMiss is returned when a certificate is not found in cache.
-var ErrCacheMiss = errors.New("Cache miss")
+//Certificate Cache
 var CertCache = cache.New(3600*time.Second, 90*time.Second)
 
 // Get reads a certificate data from the specified kv.
 func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	if p, found := CertCache.Get(name); found {
-		return *p.(*[]byte), nil
+		return p.([]byte), nil
 	}
-	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, []byte(name))
+	keyname := CACHE_PREFIX + name
+	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, keyname)
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
-	} else {
-		rlog.Infof("[GET] Cache query key: %s, result: %s\n", name, result)
-		if len(result.([]byte)) == 0 {
-			return nil, ErrCacheMiss
-		}
-		return result.([]byte), nil
 	}
+	if len(result.([]byte)) == 0 {
+		//TODO: Add malware tracking tool here
+		rlog.Infof("[GET] Cache miss, key: %s\n", keyname)
+		return nil, autocert.ErrCacheMiss
+	}
+	CertCache.Set(name, result, cache.DefaultExpiration)
+	return result.([]byte), nil
+
 }
 
 // Put writes the certificate data to the specified kv.
 func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
+	keyname := CACHE_PREFIX + name
 	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
 	kv := &KVAction{
-		Key: name,
+		Key: keyname,
 		Val: data,
 	}
 	kvdata, err := json.Marshal(kv)
@@ -61,6 +66,7 @@ func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 // Delete removes the specified kv.
 func (kvs KvService) Delete(ctx context.Context, name string) error {
 	CertCache.Delete(name)
-	rlog.Warningf("[kvcache] Delete kv not implemented\n")
+	kvs.Put(ctx, name, []byte{})
+	//TODO: Complete delete implementation, bit hacky atm
 	return nil
 }

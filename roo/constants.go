@@ -4,10 +4,11 @@ import "github.com/lni/dragonboat/v3/logger"
 
 //////////////////////////////////////// Constants
 const (
-	ENV_ROO_DNS         string = "ROO_DNS"
-	ENV_ROO_RESOLVER    string = "ROO_RESOLVER"
-	ENV_ROO_START_DELAY string = "ROO_START_DELAY"
-	ENV_ROO_SWARM       string = "ROO_SWARM"
+	ENV_ROO_DNS          string = "ROO_DNS"
+	ENV_ROO_RESOLVER     string = "ROO_RESOLVER"
+	ENV_ROO_START_DELAY  string = "ROO_START_DELAY"
+	ENV_ROO_ACME_STAGING string = "ROO_ACME_STAGING"
+	ENV_ROO_SWARM        string = "ROO_SWARM"
 
 	BOOTSTRAP_DELAY_MS int    = 7000 //In milliseconds
 	BOOTSTRAP_WAIT_S   int    = 60

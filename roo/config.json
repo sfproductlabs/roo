@@ -15,6 +15,7 @@
     "AllowOrigin": "*",
     "DefaultRedirect": "https://sfpl.io",
     "Debug": true,
+    "AcmeStaging": false,
     "Cluster": {
         "StartDelaySeconds": 0,
         "DNS": "localhost",

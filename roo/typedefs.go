@@ -128,6 +128,7 @@ type NatsService struct { //Implements 'session'
 type Configuration struct {
 	SchemaVersion            int
 	ApiVersion               int
+	AcmeStaging              bool
 	IgnoreInsecureTLS        bool
 	Cluster                  Cluster
 	ClusterDNS               string

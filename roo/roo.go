@@ -71,7 +71,7 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 41")
+	fmt.Println("Roo. Version 54")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
@@ -157,6 +157,7 @@ func main() {
 	}
 
 	//////////////////////////////////////// MAX CALLS
+	// This should prevent DoS - or help
 	if configuration.ProxyDailyLimit > 0 && configuration.ProxyDailyLimitChecker == MEMORY_CHECKER {
 		c := cache.New(24*time.Hour, 10*time.Minute)
 		configuration.ProxyDailyLimitCheck = func(ip string) uint64 {
@@ -417,12 +418,16 @@ func main() {
 	//////////////////////////////////////// PROXY EVERYTHING
 	configuration.ProxyCache = cache.New(60*time.Second, 90*time.Second)
 	configuration.ProxySharedBufferPool = newBufferPool()
+	acmeURL := ACME_PRODUCTION
+	if configuration.AcmeStaging || os.Getenv(ENV_ROO_ACME_STAGING) == "true" {
+		acmeURL = ACME_STAGING
+	}
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		Cache:      configuration.Cluster.Service.Session.(*KvService),
 		HostPolicy: func(context.Context, string) error { return nil }, //Allow everything
 		Client: &acme.Client{
-			DirectoryURL: ACME_STAGING,
+			DirectoryURL: acmeURL,
 		},
 	}
 	server := &http.Server{ // HTTP REDIR SSL RENEW
@@ -478,11 +483,7 @@ func main() {
 	//////////////////////////////////////// ACTUALLY RUN THE SERVICES
 	//TODO: Wait to start until nh is created from raft cluster
 	//Redirect HTTP->HTTPS
-	go func() {
-		http.ListenAndServe(":http", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			http.Redirect(w, req, "https://"+getHost(req)+req.RequestURI, http.StatusFound)
-		}))
-	}()
+	go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
 
 	//Start the actual Proxy Service
 	log.Fatal(server.ListenAndServeTLS("", ""))

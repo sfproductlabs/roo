@@ -1,15 +1,26 @@
-# Roo
+# Roo (Beta)
 
-This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops.
+This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
 
-## Getting Started
+If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
+
+## Getting Started (on swarm)
+* Create the default network, for example:
+```
+docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 
+```
 * Add label to the nodes you want to run it on
 ```
 docker node update --label-add load_balancer=true docker1-prod
 ```
-* Run [this](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done
+* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
+```
+## Getting Started (on docker)
+* Just run it (or even better use the roo-docker-compose file)
+```
+docker run sfproductlabs/roo:latest
 ```
 
 ## Complete autoconfig of docker swarm services
@@ -18,9 +29,14 @@ docker node update --label-add load_balancer=true docker1-prod
 ## Going Manual
 Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo.
 
+### Building from source
+* You need to get the dependencies. Check the roo-docker-compose.yml file for a current list.
+* Run ```make``` in the root directory (not the roo directory).
+
 ### Schema Definitions
 
 #### Adding a route to the routing table
+* Use the Put API below
 ```
 com.roo.host:<requesting_host<:port (optional)>:scheme>  <destination_url>
 ```
@@ -75,6 +91,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
 ## TODO
+- [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
 * [ ] Downscale swarm cleaner (removing a container should remove the raft address and nodehost, could run a leader process like in dcrontab) @psytron or link with docker connector
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
