@@ -87,7 +87,7 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 	leaderStopper := syncutil.NewStopper()
 	leaderStopper.RunWorker(func() {
 		ticker := time.NewTicker(time.Duration(kvs.AppConfig.SwarmRefreshSeconds) * time.Second) //Update routes in kv from swarm every 60 seconds
-		regex := regexp.MustCompile(`\.update\.(.*)`)
+		var regex = regexp.MustCompile(`.*\:(.+)`)
 		for {
 			select {
 			case <-ticker.C:
@@ -104,11 +104,10 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 						items := result.(map[string][]byte)
 						for i, _ := range items {
 							matches := regex.FindStringSubmatch(i)
-							mi := len(matches)
-							if mi < 1 {
+							if len(matches) < 2 {
 								continue
 							}
-							r, _ := http.NewRequest("POST", "http://"+matches[0]+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/swarm", nil) //TODO: https
+							r, _ := http.NewRequest("POST", "http://"+matches[1]+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/swarm", nil) //TODO: https
 							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 							defer cancel()
 							r = r.WithContext(ctx)
