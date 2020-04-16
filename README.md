@@ -22,6 +22,7 @@ docker node update --label-add load_balancer=true docker1-prod
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
+* Notice the roo images are available at dockerhub [sfproductlabs/roo:latest](https://hub.docker.com/repository/docker/sfproductlabs/roo). I don't use the Github repository service as it requires a key to just get the image.
 * Then in your own docker-compose file do something like (note the label used in the zeroconfig):
 ```yaml
 version: "3.7"
@@ -47,6 +48,7 @@ networks:
 JOB DONE!
 ### Zeroconfig of docker swarm services
 You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
+
 
 ### Going Manual
 Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo. To add the route and do the zeroconfig example above manually, do this instead:
@@ -118,6 +120,12 @@ docker service logs roo_roo -f
 docker run -it --net=forenet alpine ash
 nslookup tasks.roo_roo.
 curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
+```
+## Getting Started (on docker)
+
+* Want to just run it?
+```
+docker run sfproductlabs/roo:latest
 ```
 
 ## TODO
