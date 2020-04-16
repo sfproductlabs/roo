@@ -7,11 +7,14 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	client "github.com/docker/docker/client"
+	"github.com/docker/docker/client"
 	//"time"
 )
 
-func GetDockerTasks() ([]map[string]string, error) {
+//This should pass the full label string of the filtered routes from all the labels
+//It should be an array of the form
+//["com.roo.host:tr.sfpl.io:https=http://tracker_tracker:8443", etc....]
+func GetDockerRoutes() ([]Route, error) {
 	/////////////// CONNECT TO SOCKET
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -23,6 +26,7 @@ func GetDockerTasks() ([]map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("DEBUG", tasks)
 
 	/////////////////////// SCAN TASKS
 	var conz []map[string]string
@@ -38,5 +42,5 @@ func GetDockerTasks() ([]map[string]string, error) {
 			}
 		}
 	}
-	return conz, nil
+	return nil, nil
 }

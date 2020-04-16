@@ -175,3 +175,12 @@ type ClusterStatus struct {
 	Instantiated int64
 	Started      int64
 }
+
+type Route struct {
+	originScheme      string
+	originHost        string
+	originPort        string
+	destinationScheme string
+	destinationHost   string
+	destinationPort   string
+}

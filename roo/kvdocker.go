@@ -50,7 +50,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"regexp"
 	"time"
@@ -58,8 +57,37 @@ import (
 	"github.com/lni/goutils/syncutil"
 )
 
+func (rt Route) GetKey() string {
+	key := HOST_PREFIX + rt.originHost
+	//Do https by default
+	if rt.originScheme == "" {
+		rt.originScheme = "https"
+	}
+	if rt.originScheme == "http" && (rt.originPort == "80" || rt.originPort == ":http") {
+		rt.originPort = ""
+	}
+	if rt.originScheme == "https" && (rt.originPort == "443" || rt.originPort == ":https") {
+		rt.originPort = ""
+	}
+	if len(rt.originPort) > 0 {
+		key = key + ":" + rt.originPort
+	}
+	if len(rt.originScheme) == 0 {
+		return key + ":https"
+	} else {
+		return key + ":" + rt.originScheme
+	}
+}
+
+func (rt Route) GetValue() string {
+	if len(rt.destinationScheme) == 0 {
+		rt.destinationScheme = "http"
+	}
+	return rt.destinationScheme + "://" + rt.destinationHost + ":" + rt.destinationPort
+}
+
 func (kvs *KvService) updateFromSwarm(updateRole bool) error {
-	tasks, err := GetDockerTasks()
+	routes, err := GetDockerRoutes()
 	if updateRole {
 		//Add node's role
 		rolePrefix := SWARM_WORKER_PREFIX
@@ -75,8 +103,28 @@ func (kvs *KvService) updateFromSwarm(updateRole bool) error {
 		defer cancel()
 		kvs.execute(ctx, action) //just try and write
 	}
+	//ACTUALLY WRITE ROUTES TO KV
 	if err == nil {
-		fmt.Println(tasks)
+		actions := make([]KVAction, 0, 30)
+		for _, rt := range routes {
+			actions = append(actions, KVAction{
+				Action: PUT,
+				Key:    rt.GetKey(),
+				Val:    []byte(rt.GetValue()),
+			})
+		}
+		//TODO: Batching from actions
+		go func() {
+			for _, action := range actions {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				_, err = kvs.execute(ctx, &action)
+				if err != nil {
+					rlog.Warningf("Could not write route: %v to cluster: %v", action, err)
+				}
+			}
+		}()
+
 	}
 	return err
 }

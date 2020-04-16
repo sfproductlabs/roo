@@ -12,29 +12,32 @@ import (
 )
 
 func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configuration) {
+	scheme := ":https" //scheme default is https and is empty string
+	if r.TLS == nil {
+		scheme = ":http"
+	}
+	requestKey := HOST_PREFIX + r.Host + scheme
 	w := *writer
 	//Check the local cached proxy list
-	if p, found := configuration.ProxyCache.Get(r.Host); found {
+	if p, found := configuration.ProxyCache.Get(requestKey); found {
 		p.(*httputil.ReverseProxy).ServeHTTP(w, r)
 		return
 	}
 	//Then check the kv-cluster
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
 	defer cancel()
-	scheme := ":https" //scheme default is https and is empty string
-	if r.TLS == nil {
-		scheme = ":http"
-	}
-	if dest, err := configuration.Cluster.Service.Session.(*KvService).Get(ctx, HOST_PREFIX+r.Host+scheme); err != nil || dest == nil {
+
+	if destination, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: GET, Key: requestKey}); err != nil || len(destination.([]byte)) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(HOST_NOT_FOUND))
 	} else {
+		dest := string(destination.([]byte))
 		//Proxy
 		w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		destination, err := url.Parse(string(dest))
 		if err != nil {
-			fmt.Println("Could not route from %s to %s, bad destination", r.Host, string(dest))
+			fmt.Printf("Could not route from %s to %s, bad destination\n", r.Host, string(dest))
 		}
 		director := func(req *http.Request) {
 			req.Header.Add("X-Forwarded-For", req.Header.Get("X-Forwarded-For"))
