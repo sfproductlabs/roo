@@ -1,6 +1,6 @@
 # Roo (Beta)
 
-This aims to be a free replacement of Amazon ECS, EKS, CertificateManager, Load-Balancer and CloudWatch. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
+This aims to be a free replacement of Amazon's ECS (Elastic Compute Service), EKS, CertificateManager, Load-Balancer and CloudWatch using your own Docker Swarm. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
 
 If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
 
@@ -121,16 +121,16 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
 ## TODO
-* [ ] Add support for Elastic's APM https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html
-* [ ] Add an option to whitelist hostnames only in the store (this will prevent dodgy requests)
-* [ ] Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)
-* [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
+* [ ] Add support for Elastic's APM Monitoring Service https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html
+* [x] Add an option to whitelist hostnames only in the store (this will prevent dodgy requests)
+* [x] Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)
+* [x] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
 * [ ] Downscale swarm cleaner (removing a container should remove the raft address and nodehost, could run a leader process like in dcrontab) @psytron or link with docker connector
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
 * [ ] Move flaoting IPs (Load balance, service down)
 * [ ] SSL in API
-* [ ] HTTP for Proxying (Only SSL Supported atm)
+* [ ] HTTP for Proxying Origin (Only SSL Supported atm)
 * [ ] Auto downgrade 
 * [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
 
