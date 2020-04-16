@@ -2,20 +2,20 @@ version: "3.7"
 services:
   test:
     image: nginx
-    ports:
-     - "6298:80"
     deploy:
       replicas: 1
+    networks:
+      - forenet
     labels:
-      # - com.roo.host:test.sfpl.io:80:http=http://test_test:6298
+      # curl -X PUT roo_roo:6299/roo/v1/kv/com.roo.host:test.sfpl.io:https -d 'http://test_test:80'
+      # - com.roo.host:test.sfpl.io:https=http://test_test:80
       OriginHosts: test.sfpl.io
       OriginScheme: https
       OriginPort: 443
       DestinationHost: test_test
       DestinationScheme: http
-      DestinationPort: 6298
+      DestinationPort: 80
     
 networks:
   forenet:
-    driver: overlay
     external: true          
