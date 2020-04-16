@@ -1,6 +1,6 @@
 # Roo (Beta)
 
-This aims to be a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
+This aims to be a free replacement of Amazon ECS, EKS, CertificateManager, Load-Balancer and CloudWatch. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
 
 If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
 
@@ -13,10 +13,33 @@ docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
 ```
 docker node update --label-add load_balancer=true docker1-prod
 ```
-* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done:
+* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm:
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
+* Then in your own docker-compose file do something like (note the label used in the zeroconfig):
+```yaml
+version: "3.7"
+services:
+  test:
+    image: test
+    deploy:
+      replicas: 1
+    networks:
+      - forenet
+    labels:
+      OriginHosts: test.sfpl.io
+      OriginScheme: https
+      OriginPort: 443
+      DestinationHost: test_test
+      DestinationScheme: http
+      DestinationPort: 80
+    
+networks:
+  forenet:
+    external: true  
+```
+JOB DONE!
 ### Zeroconfig of docker swarm services
 You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
 
