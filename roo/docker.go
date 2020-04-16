@@ -1,46 +1,47 @@
-//package eyedoc //thanks @psytron
 package main
 
 import (
 	"context"
 	"fmt"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	//"time"
+	"github.com/mitchellh/mapstructure"
 )
 
-//This should pass the full label string of the filtered routes from all the labels
-//It should be an array of the form
-//["com.roo.host:tr.sfpl.io:https=http://tracker_tracker:8443", etc....]
-func GetDockerRoutes() ([]Route, error) {
+type Route struct {
+	OriginScheme      string
+	OriginHost        string
+	OriginPort        string
+	DestinationScheme string
+	DestinationHost   string
+	DestinationPort   string
+}
+
+func Tasks() []Route {
+
 	/////////////// CONNECT TO SOCKET
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't connect to docker socket")
+		panic(err)
 	}
 	taskFilter := filters.NewArgs()
 	tasks, err := cli.TaskList(ctx, types.TaskListOptions{Filters: taskFilter})
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("DEBUG", tasks)
 
 	/////////////////////// SCAN TASKS
-	var conz []map[string]string
+	var conz []Route
 	for _, task := range tasks {
-		if val, ok := task.Spec.ContainerSpec.Labels[HOST_PREFIX]; ok {
-			for _, ntrk := range task.NetworksAttachments {
-				fmt.Println("DEBUG", task, val)
-				ob := map[string]string{}
-				ob["container"] = task.ID
-				ob["com.roo.host"] = val
-				ob["receive"] = ntrk.Addresses[0]
-				conz = append(conz, ob)
+		if val, ok := task.Spec.ContainerSpec.Labels["OriginHost"]; ok {
+			var route Route
+			//route.DestinationHost = "sometihng"
+			err := mapstructure.Decode(task.Spec.ContainerSpec.Labels, &route)
+			if err != nil {
+				panic(err)
 			}
+			fmt.Println(route, val)
+			conz = append(conz, route)
 		}
 	}
-	return nil, nil
+	return conz
 }

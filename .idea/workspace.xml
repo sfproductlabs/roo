@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b8fcc30d-c716-4f2c-a8ba-ddc1dc86052e" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" path="/usr/local/go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="ProjectId" id="1aKnQNNAoqrSGnZVXykaRdVePqy" />
+  <component name="ProjectViewState">
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.sdk.automatically.set" value="true" />
+    <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/roo" />
+    </key>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b8fcc30d-c716-4f2c-a8ba-ddc1dc86052e" name="Default Changelist" comment="" />
+      <created>1586493135738</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1586493135738</updated>
+      <workItem from="1586493137770" duration="10218000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="-1830" y="-177" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1586822231321">
+      <screen x="-2560" y="-517" width="2560" height="1417" />
+    </state>
+    <state x="-1830" y="-177" key="#com.intellij.execution.impl.EditConfigurationsDialog/-2560.-517.2560.1417/0.23.1440.877@-2560.-517.2560.1417" timestamp="1586822231321" />
+    <state x="-1593" y="-134" key="VCS.ChangeListViewerDialog" timestamp="1586973175008">
+      <screen x="-2560" y="-517" width="2560" height="1417" />
+    </state>
+    <state x="-1593" y="-134" key="VCS.ChangeListViewerDialog/-2560.-517.2560.1417/0.23.1440.877@-2560.-517.2560.1417" timestamp="1586973175008" />
+    <state x="-1510" y="-82" width="598" height="486" key="find.popup" timestamp="1586822052124">
+      <screen x="-2560" y="-517" width="2560" height="1417" />
+    </state>
+    <state x="-1510" y="-82" width="598" height="486" key="find.popup/-2560.-517.2560.1417/0.23.1440.877@-2560.-517.2560.1417" timestamp="1586822052124" />
+    <state x="-1629" y="-207" width="670" height="676" key="search.everywhere.popup" timestamp="1586823018002">
+      <screen x="-2560" y="-517" width="2560" height="1417" />
+    </state>
+    <state x="-1629" y="-207" width="670" height="676" key="search.everywhere.popup/-2560.-517.2560.1417/0.23.1440.877@-2560.-517.2560.1417" timestamp="1586823018002" />
+  </component>
+</project>
