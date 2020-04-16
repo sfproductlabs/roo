@@ -132,15 +132,17 @@ type Configuration struct {
 	ApiVersion               int
 	ApiVersionString         string
 	AcmeStaging              bool
-	IgnoreInsecureTLS        bool
-	Cluster                  Cluster
-	ClusterDNS               string
 	Swarm                    bool
 	SwarmRefreshSeconds      int
 	SwarmRole                string
+	CheckHostnames           bool
+	HostCache                *cache.Cache
+	Cluster                  Cluster
+	ClusterDNS               string
 	Notify                   []Service
 	Consume                  []Service
 	API                      *Service
+	IgnoreInsecureTLS        bool
 	ProxyUrlFilter           string
 	IgnoreProxyOptions       bool
 	ProxyForceJson           bool

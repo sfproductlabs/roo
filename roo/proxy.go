@@ -13,12 +13,17 @@ import (
 )
 
 func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configuration) {
+	w := *writer
+	if configuration.Cluster.Service.Session == nil {
+		w.WriteHeader(http.StatusTooEarly)
+		w.Write([]byte(HOST_NOT_FOUND))
+		return
+	}
 	scheme := ":https" //scheme default is https and is empty string
 	if r.TLS == nil {
 		scheme = ":http"
 	}
 	requestKey := HOST_PREFIX + r.Host + scheme
-	w := *writer
 	//Check the local cached proxy list
 	if p, found := configuration.ProxyCache.Get(requestKey); found {
 		p.(*httputil.ReverseProxy).ServeHTTP(w, r)
@@ -31,6 +36,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 	if destination, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: GET, Key: requestKey}); err != nil || len(destination.([]byte)) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(HOST_NOT_FOUND))
+		return
 	} else {
 		dest := string(destination.([]byte))
 		//Proxy
