@@ -26,7 +26,7 @@ Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below f
 ```
 docker stack deploy -c test-docker-compose.yml test
 ```
-* Then let roo know the route (do this inside the forenet network):
+* Then let roo know the route (do this inside any machine in the forenet network):
 ```
 curl -X PUT roo_roo:6299/roo/v1/kv/com.roo.host:test.sfpl.io:https -d 'http://test_test:80'
 ```
