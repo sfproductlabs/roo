@@ -24,14 +24,13 @@ func GetDockerRoutes() ([]Route, error) {
 	/////////////////////// SCAN TASKS
 	var conz []Route
 	for _, task := range tasks {
-		if val, ok := task.Spec.ContainerSpec.Labels["OriginHost"]; ok {
+		if label, ok := task.Spec.ContainerSpec.Labels["OriginHost"]; ok {
 			var route Route
-			//route.DestinationHost = "sometihng"
 			err := mapstructure.Decode(task.Spec.ContainerSpec.Labels, &route)
 			if err != nil {
+				rlog.Infof("Error loading route for task %s (%s), label %s", task.Name, task.ID, label)
 				continue
 			}
-			fmt.Println("DEBUG", route, val)
 			conz = append(conz, route)
 		}
 	}

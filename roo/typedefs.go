@@ -177,10 +177,10 @@ type ClusterStatus struct {
 }
 
 type Route struct {
-	originScheme      string
-	originHost        string
-	originPort        string
-	destinationScheme string
-	destinationHost   string
-	destinationPort   string
+	OriginScheme      string
+	OriginHost        string
+	OriginPort        string
+	DestinationScheme string
+	DestinationHost   string
+	DestinationPort   string
 }

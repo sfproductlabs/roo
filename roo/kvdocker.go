@@ -58,32 +58,32 @@ import (
 )
 
 func (rt Route) GetKey() string {
-	key := HOST_PREFIX + rt.originHost
+	key := HOST_PREFIX + rt.OriginHost
 	//Do https by default
-	if rt.originScheme == "" {
-		rt.originScheme = "https"
+	if rt.OriginScheme == "" {
+		rt.OriginScheme = "https"
 	}
-	if rt.originScheme == "http" && (rt.originPort == "80" || rt.originPort == ":http") {
-		rt.originPort = ""
+	if rt.OriginScheme == "http" && (rt.OriginPort == "80" || rt.OriginPort == ":http") {
+		rt.OriginPort = ""
 	}
-	if rt.originScheme == "https" && (rt.originPort == "443" || rt.originPort == ":https") {
-		rt.originPort = ""
+	if rt.OriginScheme == "https" && (rt.OriginPort == "443" || rt.OriginPort == ":https") {
+		rt.OriginPort = ""
 	}
-	if len(rt.originPort) > 0 {
-		key = key + ":" + rt.originPort
+	if len(rt.OriginPort) > 0 {
+		key = key + ":" + rt.OriginPort
 	}
-	if len(rt.originScheme) == 0 {
+	if len(rt.OriginScheme) == 0 {
 		return key + ":https"
 	} else {
-		return key + ":" + rt.originScheme
+		return key + ":" + rt.OriginScheme
 	}
 }
 
 func (rt Route) GetValue() string {
-	if len(rt.destinationScheme) == 0 {
-		rt.destinationScheme = "http"
+	if len(rt.DestinationScheme) == 0 {
+		rt.DestinationScheme = "http"
 	}
-	return rt.destinationScheme + "://" + rt.destinationHost + ":" + rt.destinationPort
+	return rt.DestinationScheme + "://" + rt.DestinationHost + ":" + rt.DestinationPort
 }
 
 func (kvs *KvService) updateFromSwarm(updateRole bool) error {
