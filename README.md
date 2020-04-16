@@ -35,8 +35,6 @@ services:
       - forenet
     labels:
       OriginHosts: test.sfpl.io
-      OriginScheme: https
-      OriginPort: 443
       DestinationHost: test_test
       DestinationScheme: http
       DestinationPort: 80
