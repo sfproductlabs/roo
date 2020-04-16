@@ -41,7 +41,7 @@ networks:
   forenet:
     external: true  
 ```
-ALL DONE!
+JOB DONE!
 ### Zeroconfig of docker swarm services
 You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
 
