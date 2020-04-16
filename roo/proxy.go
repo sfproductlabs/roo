@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -48,8 +49,15 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 			}
 			req.URL.Scheme = destination.Scheme
 			req.URL.Host = destination.Host
+
 		}
-		proxy := &httputil.ReverseProxy{Director: director, BufferPool: configuration.ProxySharedBufferPool}
+		customTransport := http.DefaultTransport.(*http.Transport).Clone()
+		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		proxy := &httputil.ReverseProxy{
+			Director:   director,
+			BufferPool: configuration.ProxySharedBufferPool,
+			Transport:  customTransport,
+		}
 		configuration.ProxyCache.Set(r.Host, proxy, cache.DefaultExpiration)
 		proxy.ServeHTTP(w, r)
 	}
