@@ -13,11 +13,11 @@ docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
 ```
 docker node update --label-add load_balancer=true docker1-prod
 ```
-* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done:
+* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm:
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
-* Then in your own docker-compose file do something like:
+* Then in your own docker-compose file do something like (note the label used in the zeroconfig):
 ```yaml
 version: "3.7"
 services:
@@ -28,8 +28,6 @@ services:
     networks:
       - forenet
     labels:
-      # curl -X PUT roo_roo:6299/roo/v1/kv/com.roo.host:test.sfpl.io:https -d 'http://test_test:80'
-      # - com.roo.host:test.sfpl.io:https=http://test_test:80
       OriginHosts: test.sfpl.io
       OriginScheme: https
       OriginPort: 443
