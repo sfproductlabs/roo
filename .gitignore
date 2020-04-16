@@ -26,3 +26,4 @@ config.*.json
 
 example-data/
 cluster-data/
+.idea
