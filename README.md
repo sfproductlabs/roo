@@ -9,33 +9,35 @@ If you are unfamiliar with swarm/kubernetes and are a developer and want a quick
 ```
 docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 
 ```
-* Add label to the nodes you want to run it on
+* Add label to the nodes you want to run it on (load_balancer describes the label for roo to attach to):
 ```
 docker node update --label-add load_balancer=true docker1-prod
 ```
-* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done
+* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm and you're done:
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
-## Getting Started (on docker)
-* Just run it (or even better use the roo-docker-compose file)
+### Zeroconfig of docker swarm services
+You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
+
+### Going Manual
+Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo. To add the route and do the zeroconfig example above manually, do this instead:
+* You'll need to first deploy the test stack
 ```
-docker run sfproductlabs/roo:latest
+docker stack deploy -c test-docker-compose.yml test
+```
+* Then let roo know the route (do this inside the forenet network):
+```
+curl -X PUT roo_roo:6299/roo/v1/kv/com.roo.host:test.sfpl.io:https -d 'http://test_test:80'
 ```
 
-## Complete autoconfig of docker swarm services
-(Coming momentarily) @psytron
-
-## Going Manual
-Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo.
-
-### Building from source
+## Building from source
 * You need to get the dependencies. Check the roo-docker-compose.yml file for a current list.
 * Run ```make``` in the root directory (not the roo directory).
 
-### Schema Definitions
+## Schema Definitions
 
-#### Adding a route to the routing table
+### Adding a route to the routing table
 * Use the Put API below
 ```
 com.roo.host:<requesting_host<:port (optional)>:scheme>  <destination_url>
@@ -91,6 +93,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
 ## TODO
+* [ ] Add an option to whitelist hostnames only in the store
 * [ ] Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)
 * [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
 * [ ] Downscale swarm cleaner (removing a container should remove the raft address and nodehost, could run a leader process like in dcrontab) @psytron or link with docker connector
