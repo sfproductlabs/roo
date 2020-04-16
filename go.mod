@@ -15,6 +15,7 @@ require (
 	github.com/lni/dragonboat/v3 v3.2.0
 	github.com/lni/goutils v1.1.0
 	github.com/miekg/dns v1.1.29
+	github.com/mitchellh/mapstructure v1.2.2
 	github.com/nats-io/nats.go v1.8.1
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
