@@ -3,6 +3,7 @@
     "ApiVersion": 1,
     "Swarm": true,
     "SwarmRefreshSeconds": 30,
+    "CheckHostnames" : true,
     "IgnoreInsecureTLS": true,
     "ProxyDailyLimit": 0,
     "ProxyDailyLimitChecker": "memory",

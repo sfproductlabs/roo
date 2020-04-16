@@ -428,10 +428,31 @@ func main() {
 	if configuration.AcmeStaging || os.Getenv(ENV_ROO_ACME_STAGING) == "true" {
 		acmeURL = ACME_STAGING
 	}
+	configuration.HostCache = cache.New(4*time.Minute, 90*time.Second)
 	certManager := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		Cache:      configuration.Cluster.Service.Session.(*KvService),
-		HostPolicy: func(context.Context, string) error { return nil }, //Allow everything
+		Prompt: autocert.AcceptTOS,
+		Cache:  configuration.Cluster.Service.Session.(*KvService),
+		HostPolicy: func(ctx context.Context, name string) error {
+			if !configuration.CheckHostnames {
+				return nil
+			}
+			if configuration.Cluster.Service.Session == nil {
+				return fmt.Errorf("Hostname Check Not Ready")
+			}
+			//First check the cache
+			if _, found := configuration.HostCache.Get(name); found {
+				return nil
+			}
+			//Then check the kv-cluster
+			ctx, cancel := context.WithTimeout(ctx, time.Duration(3*time.Second))
+			defer cancel()
+			if hosts, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: SCAN, Key: HOST_PREFIX + name}); err != nil || len(hosts.(map[string][]byte)) == 0 {
+				rlog.Warningf("[HOSTNAME] Invalid check failed for %s\n", name)
+				return fmt.Errorf("Hostname Check Failed")
+			}
+			configuration.HostCache.Set(name, true, cache.DefaultExpiration)
+			return nil
+		},
 		Client: &acme.Client{
 			DirectoryURL: acmeURL,
 		},
