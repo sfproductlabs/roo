@@ -4,6 +4,10 @@ This aims to be a free replacement of Amazon ECS, EKS, CertificateManager, Load-
 
 If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
 
+The power Roo gives you is to add HTTPS://example1.com and HTTPS://example2.com to your clustered services with zero configuration. Let's encrypt allocates your service's certificates. It works across every machine, docker node, service, in your cluster.
+
+Roo itself is clustered. Every machine it runs on shares the load to your services. It's distributed store shares certificates from Letsencrypt used across all your nodes. Now apple is denying certificates older than a year, I feel as a dev, that lets encrypt is almost mandatory as it creates a lot of admin.
+
 ## Getting Started (on swarm)
 * Create the default network, for example:
 ```
@@ -13,6 +17,7 @@ docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
 ```
 docker node update --label-add load_balancer=true docker1-prod
 ```
+* You'll need to run roo on at least one manager node if you want docker services to auto-sync with Let's Encrypt. Don't worry though as this is not a security issue like in other platforms (like Traefik) as the manager node need not be publicly accessible.
 * Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm:
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
@@ -116,6 +121,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 ```
 
 ## TODO
+* [ ] Add support for Elastic's APM https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html
 * [ ] Add an option to whitelist hostnames only in the store (this will prevent dodgy requests)
 * [ ] Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)
 * [ ] Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist
