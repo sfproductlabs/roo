@@ -27,7 +27,7 @@ func GetDockerRoutes() ([]Route, error) {
 		if label, ok := task.Spec.ContainerSpec.Labels["OriginHost"]; ok {
 			var route Route
 			err := mapstructure.Decode(task.Spec.ContainerSpec.Labels, &route)
-			if err != nil {
+			if err != nil || route.OriginHost == "" || route.DestinationHost == "" || route.DestinationPort == "" {
 				rlog.Infof("Error loading route for task %s (%s), label %s", task.Name, task.ID, label)
 				continue
 			}
