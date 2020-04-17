@@ -148,7 +148,7 @@ docker run sfproductlabs/roo:latest
 * [ ] HTTP for Proxying Origin (Only SSL Supported atm)
 * [ ] Auto downgrade 
 * [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
-
+* [ ] Investigate the possibilty of a race condition between the in memory certificate/proxy cache right when letsencrypt should be renewing (might be a 10 minute window of inoperability)? Interesting thought...
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)
 * [DragonGate](https://github.com/dioptre/DragonGate)
