@@ -161,3 +161,5 @@ docker run sfproductlabs/roo:latest
 
 ## Support
 I use roo commercially and in production for my startups. If you want support, email us at support@sfpl.io.
+
+If you use it or like it please let me know!
