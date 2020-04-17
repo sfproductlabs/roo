@@ -18,11 +18,12 @@ docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
 docker node update --label-add load_balancer=true docker1-prod
 ```
 * You'll need to run roo on at least one manager node if you want docker services to auto-sync with Let's Encrypt. Don't worry though as this is not a security issue like in other platforms (like Traefik) as the manager node need not be publicly accessible.
-* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm:
+* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm (WARNING: LetsEncrypt hates load, so update the ```ROO_ACME_STAGING=true``` if you plan to muck about):
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
-* Then in your own docker-compose file do something like (note the label used in the zeroconfig):
+* Notice the roo images are available at dockerhub [sfproductlabs/roo:latest](https://hub.docker.com/repository/docker/sfproductlabs/roo). I don't use the Github repository service as it requires a key to just get the image.
+* Then in your own docker-compose file do something like (note the label used in the zeroconfig, and the destination, its usually swarmstack_swarmservicename):
 ```yaml
 version: "3.7"
 services:
@@ -34,8 +35,6 @@ services:
       - forenet
     labels:
       OriginHosts: test.sfpl.io
-      OriginScheme: https
-      OriginPort: 443
       DestinationHost: test_test
       DestinationScheme: http
       DestinationPort: 80
@@ -47,6 +46,7 @@ networks:
 JOB DONE!
 ### Zeroconfig of docker swarm services
 You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
+
 
 ### Going Manual
 Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo. To add the route and do the zeroconfig example above manually, do this instead:
@@ -108,6 +108,15 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 
 ## Help!
 
+### FAQ
+
+#### It hangs
+* You've reached the maximum requests to LetsEncrypt probably. You can check this by running curl -X GET http://localhost:6299/roo/v1/kvs/ and finding com.roo.cache:your.domain.com. If it exists it's not this.
+* Or your stack_service name isn't correct (the DestinationHost label in your docker-compose file).
+
+#### I don't see my site!
+* You may have tried to go to the site before the service updated the docker routing table (it updates every 60 seconds). If you went to your site before it updates, roo thinks that your domain is a dodgy request and puts similar requests in the bin for 4 minutes.
+
 ### Inspecting the roo containers
 * Inspect the logs
 ```
@@ -118,6 +127,12 @@ docker service logs roo_roo -f
 docker run -it --net=forenet alpine ash
 nslookup tasks.roo_roo.
 curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
+```
+## Getting Started (on docker)
+
+* Want to just run it?
+```
+docker run sfproductlabs/roo:latest
 ```
 
 ## TODO
@@ -133,7 +148,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 * [ ] HTTP for Proxying Origin (Only SSL Supported atm)
 * [ ] Auto downgrade 
 * [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
-
+* [ ] Investigate the possibilty of a race condition between the in memory certificate/proxy cache right when letsencrypt should be renewing (might be a 10 minute window of inoperability)? Interesting thought...
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)
 * [DragonGate](https://github.com/dioptre/DragonGate)
