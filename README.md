@@ -23,7 +23,7 @@ docker node update --label-add load_balancer=true docker1-prod
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
 * Notice the roo images are available at dockerhub [sfproductlabs/roo:latest](https://hub.docker.com/repository/docker/sfproductlabs/roo). I don't use the Github repository service as it requires a key to just get the image.
-* Then in your own docker-compose file do something like (note the label used in the zeroconfig):
+* Then in your own docker-compose file do something like (note the label used in the zeroconfig, and the destination, its usually swarmstack_swarmservicename):
 ```yaml
 version: "3.7"
 services:
