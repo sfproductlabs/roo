@@ -108,6 +108,15 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 
 ## Help!
 
+### FAQ
+
+#### It hangs
+* You've reached the maximum requests to LetsEncrypt probably. You can check this by running curl -X GET http://localhost:6299/roo/v1/kvs/ and finding com.roo.cache:your.domain.com. If it exists it's not this.
+* Or your stack_service name isn't correct (the DestinationHost label in your docker-compose file).
+
+#### I don't see my site!
+* You may have tried to go to the site before the service updated the docker routing table (it updates every 60 seconds). If you went to your site before it updates, roo thinks that your domain is a dodgy request and puts similar requests in the bin for 4 minutes.
+
 ### Inspecting the roo containers
 * Inspect the logs
 ```
