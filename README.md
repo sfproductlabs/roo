@@ -1,10 +1,7 @@
-<h1 align="center">
-
+<div align="center">
   <img width="75" src="https://media.giphy.com/media/ekFkyOSUtzvn8nHYEl/giphy.gif"/> 
-	<img src="https://tr.sfpl.io/img/v1/?gu=1&ptyp=content&utm_source=gh&utm_content=viewed_roo_ghrepo&etyp=user_viewed&ref=a1722074-80ea-11ea-96c6-acde48001122&url=https%3A%2F%2Fgithub.com%2Fsfproductlabs%2Froo"/> 
 	<br>
-	
-</h1>
+</div>
 
 # Roo (Beta)
 
