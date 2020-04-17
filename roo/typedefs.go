@@ -117,6 +117,7 @@ type KvService struct { //Implements 'session'
 	Configuration *Service
 	nh            *dragonboat.NodeHost
 	swarmUpdater  *syncutil.Stopper
+	raftWatcher   *syncutil.Stopper
 	AppConfig     *Configuration
 }
 

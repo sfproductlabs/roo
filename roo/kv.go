@@ -334,6 +334,7 @@ rejoin:
 			if kvs.AppConfig.Swarm {
 				kvs.updateFromSwarm(true)
 				kvs.swarmUpdater = kvs.runSwarmWorker()
+				kvs.raftWatcher = kvs.runRaftWatcher()
 			}
 			break
 		}
