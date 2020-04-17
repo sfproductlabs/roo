@@ -1,3 +1,11 @@
+<h1 align="center">
+
+  <img width="75" src="https://media.giphy.com/media/ekFkyOSUtzvn8nHYEl/giphy.gif"/> 
+	<img src="https://tr.sfpl.io/img/v1/?gu=1&ptyp=content&utm_source=gh&utm_content=viewed_roo_ghrepo&etyp=user_viewed&ref=a1722074-80ea-11ea-96c6-acde48001122&url=https%3A%2F%2Fgithub.com%2Fsfproductlabs%2Froo"/> 
+	<br>
+	
+</h1>
+
 # Roo (Beta)
 
 This aims to be a free replacement of Amazon's ECS (Elastic Compute Service), EKS, CertificateManager, Load-Balancer and CloudWatch using your own Docker Swarm. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
