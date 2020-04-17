@@ -158,3 +158,6 @@ docker run sfproductlabs/roo:latest
 * [DragonBoat](https://github.com/lni/dragonboat)
 * [DragonGate](https://github.com/dioptre/DragonGate)
 * [SF Product Labs](https://sfproductlabs.com)
+
+## Support
+I use roo commercially and in production for my startups. If you want support, email me at support@sfpl.io.
