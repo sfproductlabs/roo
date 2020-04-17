@@ -29,6 +29,7 @@ docker node update --label-add load_balancer=true docker1-prod
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
+* It takes a minute to bootstrap
 * Notice the roo images are available at dockerhub [sfproductlabs/roo:latest](https://hub.docker.com/repository/docker/sfproductlabs/roo). I don't use the Github repository service as it requires a key to just get the image.
 * Then in your own docker-compose file do something like (note the label used in the zeroconfig, and the destination, its usually swarmstack_swarmservicename):
 ```yaml
@@ -50,6 +51,7 @@ networks:
   forenet:
     external: true  
 ```
+* NOTE: Give it a minute before you query your service, as the service blocks unknown traffic (the docker watcher updates every 30 seconds or so, and it will need a bit to find your new service).
 JOB DONE!
 ### Zeroconfig of docker swarm services
 You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
