@@ -33,8 +33,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/lni/dragonboat-example/v3/ondisk/gorocksdb"
 	sm "github.com/lni/dragonboat/v3/statemachine"
+	"github.com/tecbot/gorocksdb"
 )
 
 func syncDir(dir string) (err error) {

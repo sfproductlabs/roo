@@ -92,10 +92,21 @@ func getIP(r *http.Request) string {
 	if ip == "" {
 		var err error
 		if ip, _, err = net.SplitHostPort(r.RemoteAddr); err != nil {
-			return r.RemoteAddr
+			ip = r.RemoteAddr
 		}
 	}
-	return ip
+	return cleanIP(ip)
+}
+
+func cleanIP(ip string) string {
+	ipa := strings.Split(ip, ",")
+	for i := len(ipa) - 1; i > -1; i-- {
+		ipa[i] = strings.TrimSpace(ipa[i])
+		if ipp := net.ParseIP(ipa[i]); ipp != nil {
+			return ipp.String()
+		}
+	}
+	return ""
 }
 
 func getHost(r *http.Request) string {
