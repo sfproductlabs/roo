@@ -83,7 +83,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 							resp, err := client.Do(r)
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 								pingCache.Set(host, time.Now().UnixNano(), cache.DefaultExpiration)
-								break
+								continue
 							} else {
 								rlog.Infof("[PING] Node host not repsonding %s", host)
 								if pinged, found := pingCache.Get(host); found {
