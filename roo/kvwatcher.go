@@ -87,7 +87,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 							} else {
 								rlog.Infof("[PING] Node host not repsonding %s", host)
 								if pinged, found := pingCache.Get(host); found {
-									if time.Now().UnixNano()-pinged.(int64) > int64(BOOTSTRAP_WAIT_S)*10^9 {
+									if (time.Now().UnixNano() - pinged.(int64)) > int64(BOOTSTRAP_WAIT_S)*10^9 {
 										rs, err := kvs.nh.RequestDeleteNode(kvs.AppConfig.Cluster.Group, nodeid, 0, 10*time.Second)
 										if err != nil {
 											rlog.Warningf("[WARNING] Failed to prune found node %s: %v, %v", host, rs, err)
