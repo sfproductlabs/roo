@@ -76,7 +76,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 						host, _, _ := net.SplitHostPort(node)
 						if err == nil {
 							r, _ := http.NewRequest("GET", "http://"+host+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/status", nil) //TODO: https
-							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
+							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(12*time.Second))
 							defer cancel()
 							r = r.WithContext(ctx)
 							client := &http.Client{}
