@@ -150,7 +150,7 @@ docker run sfproductlabs/roo:latest
 * [x] ~~Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)~~
 * [x] ~~Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist~~
 * [x] ~~Autoscaling raft~~
-* [ ] Could add rejoin once kicked out of raft
+* [ ] Could add rejoin once kicked out of raft https://github.com/lni/dragonboat/blob/master/config/config.go#L329
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
 * [ ] Move flaoting IPs (Load balance, service down)
