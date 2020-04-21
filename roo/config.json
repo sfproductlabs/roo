@@ -7,6 +7,7 @@
     "IgnoreInsecureTLS": true,
     "ProxyDailyLimit": 0,
     "ProxyDailyLimitChecker": "memory",
+    "IgnoreProxyOptions" : true,
     "MaximumConnections": 150000,
     "ReadTimeoutSeconds": 20,
     "ReadHeaderTimeoutSeconds": 20,
