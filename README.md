@@ -113,14 +113,14 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 ```
 * Returns the rows searched using the SCAN query (in KV land its a prefix filter) in JSON
 * The resulting values are encoded in base64, so you may need to convert them (unlike the GET single query above which returns raw bytes)
-* Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
+* Use ```window.atob("dGVz......dCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string... OR just use GET instead.
 
 ## Help!
 
 ### FAQ
 
 #### It hangs
-* You've reached the maximum requests to LetsEncrypt probably. You can check this by running curl -X GET http://localhost:6299/roo/v1/kvs/ and finding com.roo.cache:your.domain.com. If it exists it's not this.
+* You've reached the maximum requests to LetsEncrypt probably. You can check this by running `curl -X GET http://localhost:6299/roo/v1/kvs/` and finding `com.roo.cache:your.domain.com`. If it exists it's not this.
 * Or your stack_service name isn't correct (the DestinationHost label in your docker-compose file).
 
 #### I don't see my site!
@@ -171,12 +171,12 @@ docker run sfproductlabs/roo:latest
 * [ ] Could add rejoin once kicked out of raft https://github.com/lni/dragonboat/blob/master/config/config.go#L329
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
-* [ ] Move flaoting IPs (Load balance, service down)
+* [x] ~~Move flaoting IPs (Load balance, service down)~~ https://github.com/sfproductlabs/floater thanks @costela
 * [ ] SSL in API
 * [ ] HTTP for Proxying Origin (Only SSL Supported atm)
-* [ ] Auto downgrade 
 * [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
 * [ ] Investigate the possibilty of a race condition between the in memory certificate/proxy cache right when letsencrypt should be renewing (might be a 10 minute window of inoperability)? Interesting thought...
+
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)
 * [DragonGate](https://github.com/dioptre/DragonGate)
