@@ -176,7 +176,7 @@ func main() {
 	rtr.HandleFunc("/roo/"+configuration.ApiVersionString, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 		w.Header().Set("access-control-allow-credentials", "true")
-		w.Header().Set("access-control-allow-headers", "Authorization,Accept,User")
+		w.Header().Set("access-control-allow-headers", "Authorization,Accept,X-CSRFToken,User,Content-Type,Header")
 		w.Header().Set("access-control-allow-methods", "GET,POST,HEAD,PUT,DELETE")
 		w.Header().Set("access-control-max-age", "1728000")
 		w.WriteHeader(http.StatusOK)
@@ -490,7 +490,7 @@ func main() {
 			//Lets just allow requests to this endpoint
 			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 			w.Header().Set("access-control-allow-credentials", "true")
-			w.Header().Set("access-control-allow-headers", "Authorization,Accept,X-CSRFToken,User")
+			w.Header().Set("access-control-allow-headers", "Authorization,Accept,X-CSRFToken,User,Content-Type,Header")
 			w.Header().Set("access-control-allow-methods", "GET,POST,HEAD,PUT,DELETE")
 			w.Header().Set("access-control-max-age", "1728000")
 			w.WriteHeader(http.StatusOK)
