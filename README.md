@@ -128,7 +128,7 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 
 #### Something might be up!
 
-* Get a status of your containers (you first need to get ansible, and add the docker-hosts group):
+* Get a status of your containers (you first need to get ansible, and add your docker nodes to the docker-hosts group [you may need to look into ssh-agent too]):
 
 ```
 ansible docker-hosts -a "docker stats --no-stream"
