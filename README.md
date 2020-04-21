@@ -129,7 +129,11 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 #### Something might be up!
 
 * Get a status of your containers (you first need to get ansible, and add the docker-hosts group):
-```ansible docker-hosts -a "docker stats --no-stream"```
+
+```
+ansible docker-hosts -a "docker stats --no-stream"
+```
+
 This will get a realtime snapshot on all your machines in your swarm.
 
 
