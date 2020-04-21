@@ -126,6 +126,13 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 #### I don't see my site!
 * You may have tried to go to the site before the service updated the docker routing table (it updates every 60 seconds). If you went to your site before it updates, roo thinks that your domain is a dodgy request and puts similar requests in the bin for 4 minutes.
 
+#### Something might be up!
+
+* Get a status of your containers (you first need to get ansible, and add the docker-hosts group):
+```ansible docker-hosts -a "docker stats --no-stream"```
+This will get a realtime snapshot on all your machines in your swarm.
+
+
 ### Inspecting the roo containers
 * Inspect the logs
 ```
