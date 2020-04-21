@@ -5,7 +5,7 @@
 
 # Roo (Beta)
 
-**TL;DR** This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, etc).
+**TL;DR** This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). I setup a cluster, and publish a new domain in around 30 seconds now.
 
 This aims to be a free replacement of Amazon's ECS (Elastic Compute Service), EKS, CertificateManager, Load-Balancer and CloudWatch using your own Docker Swarm. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this in a weekend with a friend. I truly hope it benefits others too.
 
@@ -25,7 +25,7 @@ docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
 docker node update --label-add load_balancer=true docker1-prod
 ```
 * You'll need to run roo on at least one manager node if you want docker services to auto-sync with Let's Encrypt. Don't worry though as this is not a security issue like in other platforms (like Traefik) as the manager node need not be publicly accessible.
-* Run [the docker-comopose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm (WARNING: LetsEncrypt hates load, so update the ```ROO_ACME_STAGING=true``` if you plan to muck about):
+* Run [the docker-compose file](https://github.com/sfproductlabs/roo/blob/master/roo-docker-compose.yml) on swarm (WARNING: LetsEncrypt hates load, so update the ```ROO_ACME_STAGING=true``` if you plan to muck about):
 ```
 # docker stack deploy -c roo-docker-compose.yml roo
 ```
@@ -113,18 +113,29 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 ```
 * Returns the rows searched using the SCAN query (in KV land its a prefix filter) in JSON
 * The resulting values are encoded in base64, so you may need to convert them (unlike the GET single query above which returns raw bytes)
-* Use ```window.atob("dGVzdCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string.
+* Use ```window.atob("dGVz......dCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string... OR just use GET instead.
 
 ## Help!
 
 ### FAQ
 
 #### It hangs
-* You've reached the maximum requests to LetsEncrypt probably. You can check this by running curl -X GET http://localhost:6299/roo/v1/kvs/ and finding com.roo.cache:your.domain.com. If it exists it's not this.
+* You've reached the maximum requests to LetsEncrypt probably. You can check this by running `curl -X GET http://localhost:6299/roo/v1/kvs/` and finding `com.roo.cache:your.domain.com`. If it exists it's not this.
 * Or your stack_service name isn't correct (the DestinationHost label in your docker-compose file).
 
 #### I don't see my site!
 * You may have tried to go to the site before the service updated the docker routing table (it updates every 60 seconds). If you went to your site before it updates, roo thinks that your domain is a dodgy request and puts similar requests in the bin for 4 minutes.
+
+#### Something might be up!
+
+* Get a status of your containers (you first need to get ansible, and add your docker nodes to the docker-hosts group [you may need to look into ssh-agent too]):
+
+```
+ansible docker-hosts -a "docker stats --no-stream"
+```
+
+This will get a realtime snapshot on all your machines in your swarm.
+
 
 ### Inspecting the roo containers
 * Inspect the logs
@@ -144,20 +155,28 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 docker run sfproductlabs/roo:latest
 ```
 
+## Andrew's DevOps Setup (Yuck! But we have to do it)
+* I use floating IPs that transition from swarm worker to swarm worker upon failure. **(Highly Available)**
+* with round robin DNS (setup a few workers and share the IPs) **(Load Balanced, a bit dodgy but works)**
+* You need to make the swarm redundant with more than one node, the mesh network load balances internally. Make it more than 2 nodes so that the raft cluster doesn't fight over leadership. Odd numbers are great. **(HA & LB)**
+* It may not cost as much as an AWS ELB, but it probably won't saturate either. Yes, I've run into issues where you need to "warm up" the Amazon elastic load balancer before. I wouldn't be surprised if this handled as much traffic without the cost.
+* No need to say this is $$$$ cheap. I'm saving 10x as much as I would be if I used Amazon AWS using this setup. It's nice to give my startups the same tech my enterprise clients get, but they can actually afford. I don't want to share which cloud provider I used as it took 30 days to request 1 extra machine. But it was cheap. Let us all know if you find something better! You can get these benefits too if you look!
+
 ## TODO
 * [ ] Add support for Elastic's APM Monitoring Service https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html
 * [x] ~~Add an option to whitelist hostnames only in the store (this will prevent dodgy requests)~~
 * [x] ~~Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)~~
 * [x] ~~Memory api checker needs to be cached in hourly, replace kvcache, docker update, add node to hosts during join so if it fails it can be deleted, cache host whitelist~~
 * [x] ~~Autoscaling raft~~
+* [ ] Could add rejoin once kicked out of raft https://github.com/lni/dragonboat/blob/master/config/config.go#L329
 * [ ] Autoscale Docker
 * [ ] Autoscale Physical Infratructure
-* [ ] Move flaoting IPs (Load balance, service down)
+* [x] ~~Move flaoting IPs (Load balance, service down)~~ https://github.com/sfproductlabs/floater thanks @costela
 * [ ] SSL in API
 * [ ] HTTP for Proxying Origin (Only SSL Supported atm)
-* [ ] Auto downgrade 
 * [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
 * [ ] Investigate the possibilty of a race condition between the in memory certificate/proxy cache right when letsencrypt should be renewing (might be a 10 minute window of inoperability)? Interesting thought...
+
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)
 * [DragonGate](https://github.com/dioptre/DragonGate)
