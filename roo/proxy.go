@@ -40,8 +40,10 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 	} else {
 		dest := string(destination.([]byte))
 		//Proxy
-		w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
-		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		if !configuration.IgnoreProxyOptions {
+			w.Header().Set("Strict-Transport-Security", "max-age=15768000 ; includeSubDomains")
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+		}
 		destination, err := url.Parse(string(dest))
 		if err != nil {
 			fmt.Printf("Could not route from %s to %s, bad destination\n", r.Host, string(dest))
