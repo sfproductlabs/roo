@@ -16,6 +16,7 @@ The power Roo gives you is to add HTTPS://example1.com and HTTPS://example2.com 
 Roo itself is clustered. Every machine it runs on shares the load to your services. It's distributed store shares certificates from Letsencrypt used across all your nodes. Now apple is denying certificates older than a year, I feel as a dev, that lets encrypt is almost mandatory as it creates a lot of admin.
 
 ## Getting Started (on swarm)
+Run this all in the docker swarm manager look [here](https://github.com/sfproductlabs/haswarm#getting-started) to get started.
 * Create the default network, for example:
 ```
 docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 
