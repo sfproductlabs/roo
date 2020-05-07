@@ -10,7 +10,7 @@ require (
 	github.com/gocql/gocql v0.0.0-20200410100145-b454769479c6
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/gorilla/mux v1.7.4
-	github.com/lni/dragonboat/v3 v3.2.0
+	github.com/lni/dragonboat/v3 v3.1.1-0.20200430094227-ff12640e0c6c
 	github.com/lni/goutils v1.1.0
 	github.com/miekg/dns v1.1.29
 	github.com/nats-io/nats.go v1.8.1
