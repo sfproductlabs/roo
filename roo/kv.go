@@ -499,7 +499,7 @@ func (kvs *KvService) write(w *WriteArgs) error {
 	default:
 		//TODO: Manually run query via query in config.json
 		if kvs.AppConfig.Debug {
-			fmt.Printf("UNHANDLED WRITE %s\n", w)
+			fmt.Printf("UNHANDLED WRITE %v\n", w)
 		}
 	}
 

@@ -71,12 +71,12 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 66")
+	fmt.Println("Roo. Version 67")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
 	fmt.Println("Use of this software is subject to the LICENSE agreement.")
-	fmt.Println("//////////////////////////////////////////////////////////////\n\n")
+	fmt.Println("//////////////////////////////////////////////////////////////\n\n ")
 
 	//////////////////////////////////////// LOAD CONFIG
 	fmt.Println("Starting services...")
