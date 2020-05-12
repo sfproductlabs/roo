@@ -137,6 +137,19 @@ ansible docker-hosts -a "docker stats --no-stream"
 
 This will get a realtime snapshot on all your machines in your swarm.
 
+#### Get some profiling info (this might be removed in a future release, but its useful now)
+
+Install golang on a computer in your network and get profiler insights (see more https://golang.org/pkg/runtime/pprof/):
+
+Run ```go tool pprof http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/heap```
+Then type ```svg``` (or output to something you may like better)
+
+![Example of a roo heap profile](misc/profiler_example.png)
+
+_Or for manual results_ 
+
+Go to http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/
+
 
 ### Inspecting the roo containers
 * Inspect the logs
