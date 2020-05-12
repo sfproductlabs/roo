@@ -137,7 +137,8 @@ ansible docker-hosts -a "docker stats --no-stream"
 
 This will get a realtime snapshot on all your machines in your swarm.
 
-#### Get some profiling info (this might be removed in a future release, but its useful now)
+#### Get some profiling info
+NOTE: This might be removed in a future release, but it's super useful now
 
 Install golang on a computer in your network and get profiler insights (see more https://golang.org/pkg/runtime/pprof/):
 
