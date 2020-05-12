@@ -95,6 +95,9 @@ func main() {
 		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
 	}
 
+	////////////////////////////////////////SECURITY OVERRIDES
+	http.DefaultServeMux = http.NewServeMux() //This prevents profiling info available on public routes
+
 	////////////////////////////////////////CONFIGURATION OVERRIDES
 	if envDNS := os.Getenv(ENV_ROO_DNS); envDNS != "" {
 		configuration.Cluster.DNS = envDNS
