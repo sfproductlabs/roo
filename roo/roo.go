@@ -56,6 +56,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"strconv"
 	"time"
@@ -172,6 +173,11 @@ func main() {
 	/// API Must load before everything else so we can get status updates
 	//////////////////////////////////////// API ON :6299 (by default)
 	rtr := mux.NewRouter()
+	rtr.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	rtr.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	rtr.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	rtr.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	rtr.HandleFunc("/debug/pprof/{page:.*}", pprof.Index)
 	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
 	rtr.HandleFunc("/roo/"+configuration.ApiVersionString, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
