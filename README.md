@@ -137,6 +137,19 @@ ansible docker-hosts -a "docker stats --no-stream"
 
 This will get a realtime snapshot on all your machines in your swarm.
 
+#### Get some profiling info (this might be removed in a future release, but its useful now)
+
+Install golang on a computer in your network and get profiler insights (see more https://golang.org/pkg/runtime/pprof/):
+
+Run ```go tool pprof http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/heap```
+Then type ```svg``` (or output to something you may like better)
+
+![Example of a roo heap profile](misc/profiler_example.png)
+
+_Or for manual results_ 
+
+Go to http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/
+
 
 ### Inspecting the roo containers
 * Inspect the logs
@@ -157,13 +170,14 @@ docker run sfproductlabs/roo:latest
 ```
 
 ## Andrew's DevOps Setup (Yuck! But we have to do it)
-* I use floating IPs that transition from swarm worker to swarm worker upon failure. **(Highly Available)**
+* I use [floating IPs](https://github.com/sfproductlabs/floater) that transition from swarm worker to swarm worker upon failure. **(Highly Available)**
 * with round robin DNS (setup a few workers and share the IPs) **(Load Balanced, a bit dodgy but works)**
 * You need to make the swarm redundant with more than one node, the mesh network load balances internally. Make it more than 2 nodes so that the raft cluster doesn't fight over leadership. Odd numbers are great. **(HA & LB)**
 * It may not cost as much as an AWS ELB, but it probably won't saturate either. Yes, I've run into issues where you need to "warm up" the Amazon elastic load balancer before. I wouldn't be surprised if this handled as much traffic without the cost.
 * No need to say this is $$$$ cheap. I'm saving 10x as much as I would be if I used Amazon AWS using this setup. It's nice to give my startups the same tech my enterprise clients get, but they can actually afford. I don't want to share which cloud provider I used as it took 30 days to request 1 extra machine. But it was cheap. Let us all know if you find something better! You can get these benefits too if you look!
 
 ## TODO
+* [ ] Add jwt token inspection (optional) as replacement for client ssl auth
 * [ ] Add support for Elastic's APM Monitoring Service https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html
 * [x] ~~Add an option to whitelist hostnames only in the store (this will prevent dodgy requests)~~
 * [x] ~~Add a synchronized scheduler so that only one docker manager runs the auto-update script (it currently depends on 1 manager node notifying the slaves indirectly via the kv store)~~
