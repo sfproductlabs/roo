@@ -159,9 +159,21 @@ Run:
 
 ```
 #valgrind --tool=memcheck --vgdb=yes --leak-check=yes --track-origins=yes --progress-interval=600 /app/roo/rood /app/roo/roo/config.json
+```
+Then run gdb (you may need to ```apt install gdb``` on swarm node first):
+```
 #gdb /app/roo/rood
 (gdb) target remote | vgdb
+(gdb) set logging on
+(gdb) set logging redirect on
+(gdb) set logging overwrite on
+(gdb) set logging debugredirect on
+(gdb) show logging
 (gdb) monitor leak_check full reachable any
+```
+Or alternatively pipe it to a gdb.txt logfile: 
+```
+gdb -c /app/roo/rood -ex "target remote | vgdb" -ex "set logging on" -ex "set logging redirect on" -ex "set logging debugredirect on" -ex "set logging overwrite on" -ex "monitor leak_check full reachable any" -ex detach -ex quit 0 2>&1 >/dev/null
 ```
 
 ### Inspecting the roo containers
