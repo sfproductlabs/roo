@@ -80,7 +80,11 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 							defer cancel()
 							r = r.WithContext(ctx)
 							client := &http.Client{}
-							resp, err := client.Do(r)
+							resp, err := client.Do(r)							
+							if resp != nil {
+								defer resp.Body.Close()
+							}
+							client.CloseIdleConnections()
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 								pingCache.Set(host, time.Now().UnixNano(), cache.DefaultExpiration)
 								continue

@@ -175,7 +175,10 @@ func (kvs *KvService) connect() error {
 			r = r.WithContext(ctx)
 			client := &http.Client{}
 			resp, err := client.Do(r)
-			if err != nil {
+			if resp != nil {
+				defer resp.Body.Close()
+			}
+			if err != nil || resp == nil {
 				rlog.Infof("Could not connect to peer %s, %s", h, err)
 				time.Sleep(time.Duration(1) * time.Second)
 				waited = waited + 1
@@ -185,7 +188,6 @@ func (kvs *KvService) connect() error {
 				}
 				goto getNodeStatus
 			} else {
-				defer resp.Body.Close()
 				body, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					rlog.Infof("Bad response from peer (body) %s, %s : %s", h, err)
@@ -211,13 +213,17 @@ func (kvs *KvService) connect() error {
 					checkedBootstrapped := 0
 				checkBootstrap:
 					//Check to see if cluster already bootstrapped (YES: join, NO: bootstrap)
-					r, err := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/kv/"+ROO_STARTED, nil)
-					resp, err = (&http.Client{}).Do(r)
-					if err == nil {
-						defer resp.Body.Close()
+					r, _ := http.NewRequest("GET", "http://"+h+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/kv/"+ROO_STARTED, nil)
+					ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
+					defer cancel()
+					r = r.WithContext(ctx)
+					resp, err := (&http.Client{}).Do(r)
+					body := []byte("false")
+					if (resp != nil) {
+						defer resp.Body.Close()	
 						body, err = ioutil.ReadAll(resp.Body)
-					}
-					if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 && string(body) == "true" {
+					}					
+					if resp != nil && err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 && string(body) == "true" {															
 						rlog.Infof("[[DISCOVERED BOOTSTRAPPED CLUSTER]]")
 						bootstrap = false
 						cs := &ClusterStatus{
@@ -235,7 +241,13 @@ func (kvs *KvService) connect() error {
 								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
 								continue
 							}
-							resp, err = (&http.Client{}).Do(req)
+							ctx, cancel := context.WithTimeout(req.Context(), time.Duration(4*time.Second))
+							defer cancel()
+							req = req.WithContext(ctx)
+							resp, err := (&http.Client{}).Do(req)
+							if resp != nil {
+								defer resp.Body.Close()
+							}
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 								initialMembers = map[uint64]string{}
 								readyToJoin = true
@@ -508,9 +520,11 @@ func (kvs *KvService) write(w *WriteArgs) error {
 }
 
 func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{}, error) {
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
 	switch action.Action {
 	case SCAN:
-		result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+		result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.Group, action)
 		if err != nil {
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
@@ -519,7 +533,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			return result, nil
 		}
 	case GET:
-		result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+		result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.Group, action)
 		if err != nil {
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
@@ -533,7 +547,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 		if err != nil {
 			rlog.Errorf("[PUT] Execute key: %s, error: %v", action.Key, err)
 		}
-		return kvs.nh.SyncPropose(ctx, cs, kvdata)
+		return kvs.nh.SyncPropose(cctx, cs, kvdata)
 	}
 	return nil, fmt.Errorf("Method not implemented (execute) in kv %s", action.Action)
 }

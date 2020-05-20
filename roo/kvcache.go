@@ -31,7 +31,9 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 		return p.([]byte), nil
 	}
 	keyname := CACHE_PREFIX + name
-	result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, keyname)
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
+	result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.Group, keyname)
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
@@ -58,15 +60,18 @@ func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 	if err != nil {
 		rlog.Errorf("[PUT] Cache key: %s, error: %v", kv.Key, err)
 	}
-	_, err = kvs.nh.SyncPropose(ctx, cs, kvdata)
-	CertCache.Set(name, &data, cache.DefaultExpiration)
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
+	_, err = kvs.nh.SyncPropose(cctx, cs, kvdata)
+	if err == nil {
+		CertCache.Set(name, &data, cache.DefaultExpiration)
+	}
 	return err
 }
 
 // Delete removes the specified kv.
 func (kvs KvService) Delete(ctx context.Context, name string) error {
 	CertCache.Delete(name)
-	kvs.Put(ctx, name, []byte{})
+	return kvs.Put(ctx, name, []byte{})
 	//TODO: Complete delete implementation, bit hacky atm
-	return nil
 }
