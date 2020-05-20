@@ -150,6 +150,18 @@ _Or for manual results_
 
 Go to http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/
 
+#### Get detailed memory info using Valgrind
+
+The docker image contains ```apt install valgrind```
+
+Run:
+
+```
+#valgrind --tool=memcheck --vgdb=yes --leak-check=yes --track-origins=yes --progress-interval=600 /app/roo/rood /app/roo/roo/config.json
+#gdb /app/roo/rood
+(gdb) target remote | vgdb
+(gdb) monitor leak_check full reachable any
+```
 
 ### Inspecting the roo containers
 * Inspect the logs
