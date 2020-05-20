@@ -142,8 +142,16 @@ NOTE: This might be removed in a future release, but it's super useful now
 
 Install golang on a computer in your network and get profiler insights (see more https://golang.org/pkg/runtime/pprof/):
 
-Run ```go tool pprof http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/heap```
-Then type ```svg``` (or output to something you may like better)
+On swarm run ```go tool pprof http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/heap``` then type ```svg``` (or output to something you may like better).
+
+On my local development machine I do:
+```
+go tool pprof http://localhost:6299/debug/pprof/heap?debug=1
+```
+then type:
+```
+(pprof) svg
+```
 
 ![Example of a roo heap profile](misc/profiler_example.png)
 
