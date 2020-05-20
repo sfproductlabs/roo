@@ -72,12 +72,12 @@ import (
 ////////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 66")
+	fmt.Println("Roo. Version 68")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
 	fmt.Println("Use of this software is subject to the LICENSE agreement.")
-	fmt.Println("//////////////////////////////////////////////////////////////\n\n")
+	fmt.Println("//////////////////////////////////////////////////////////////\n\n ")
 
 	//////////////////////////////////////// LOAD CONFIG
 	fmt.Println("Starting services...")
@@ -94,6 +94,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
 	}
+
+	////////////////////////////////////////SECURITY OVERRIDES
+	http.DefaultServeMux = http.NewServeMux() //This prevents profiling info available on public routes
 
 	////////////////////////////////////////CONFIGURATION OVERRIDES
 	if envDNS := os.Getenv(ENV_ROO_DNS); envDNS != "" {
