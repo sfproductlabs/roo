@@ -52,6 +52,8 @@ import (
 	"context"
 	"net/http"
 	"regexp"
+	"runtime"
+	"runtime/debug"
 	"time"
 
 	"github.com/lni/goutils/syncutil"
@@ -144,6 +146,14 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 		for {
 			select {
 			case <-ticker.C:
+				//Only clean memory in debug mode
+				if kvs.AppConfig.Debug {
+					runtime.GC()
+					debug.FreeOSMemory()
+					// m := &runtime.MemStats{}
+					// runtime.ReadMemStats(m)
+					//rlog.Infof("Current Heap %+v", *m)
+				}
 				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
 				if leader == kvs.AppConfig.Cluster.NodeID {
 					action := &KVAction{
@@ -151,8 +161,8 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 						Key:    SWARM_MANAGER_PREFIX,
 					}
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(kvs.AppConfig.SwarmRefreshSeconds-1)*time.Second)
-					defer cancel()
 					result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+					cancel()
 					if err == nil {
 						items := result.(map[string][]byte)
 						for i, _ := range items {
@@ -162,10 +172,10 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 							}
 							r, _ := http.NewRequest("POST", "http://"+matches[1]+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/swarm", nil) //TODO: https
 							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
-							defer cancel()
 							r = r.WithContext(ctx)
 							client := &http.Client{}
 							resp, err := client.Do(r)
+							cancel()
 							if resp != nil {
 								defer resp.Body.Close()
 							}

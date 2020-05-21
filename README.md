@@ -147,6 +147,26 @@ Then type ```svg``` (or output to something you may like better)
 
 ![Example of a roo heap profile](misc/profiler_example.png)
 
+_Or for intermittent results_
+
+Run from source directory (./roo):
+```
+mkdir pprof
+cd pprof
+curl http://localhost:6299/debug/pprof/heap > heap.0.pprof
+sleep 30
+curl http://localhost:6299/debug/pprof/heap > heap.1.pprof
+sleep 30
+curl http://localhost:6299/debug/pprof/heap > heap.2.pprof
+sleep 30
+curl http://localhost:6299/debug/pprof/heap > heap.3.pprof
+```
+Then:
+```
+go tool pprof pprof/heap.3.pprof
+(pprof) top20
+(pprof) list NewWriterSize
+```
 _Or for manual results_ 
 
 Go to http://roo_roo_host_from_internal_forenet_network:6299/debug/pprof/
