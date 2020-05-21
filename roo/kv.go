@@ -219,11 +219,11 @@ func (kvs *KvService) connect() error {
 					r = r.WithContext(ctx)
 					resp, err := (&http.Client{}).Do(r)
 					body := []byte("false")
-					if (resp != nil) {
-						defer resp.Body.Close()	
+					if resp != nil {
+						defer resp.Body.Close()
 						body, err = ioutil.ReadAll(resp.Body)
-					}					
-					if resp != nil && err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 && string(body) == "true" {															
+					}
+					if resp != nil && err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 && string(body) == "true" {
 						rlog.Infof("[[DISCOVERED BOOTSTRAPPED CLUSTER]]")
 						bootstrap = false
 						cs := &ClusterStatus{
@@ -376,7 +376,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 
 //////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(30*time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(12*time.Second))
 	defer cancel()
 	r = r.WithContext(ctx)
 	switch s.ServiceType {
@@ -384,12 +384,11 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 	// SERVE_POST_REMOVE = iota
 	// SERVE_POST_RESCUE = iota
 	case SERVE_POST_SWARM:
-		writer := *w
 		if err := kvs.updateFromSwarm(false); err != nil {
 			return err
 		}
-		writer.WriteHeader(http.StatusOK)
-		writer.Write([]byte{})
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write([]byte{})
 		return nil
 	case SERVE_POST_JOIN:
 		body, err := ioutil.ReadAll(r.Body)
@@ -431,8 +430,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 						if _, err := kvs.execute(r.Context(), action); err != nil {
 							return err
 						} else {
-							writer := *w
-							writer.WriteHeader(http.StatusOK)
+							(*w).WriteHeader(http.StatusOK)
 							return nil
 						}
 					} else {
@@ -454,9 +452,8 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		if err != nil {
 			return fmt.Errorf("Could not get key in cluster: %s", err)
 		}
-		writer := *w
-		writer.WriteHeader(http.StatusOK)
-		writer.Write(result.([]byte))
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(result.([]byte))
 		return nil
 	case SERVE_GET_KVS:
 		action := &KVAction{
@@ -470,11 +467,10 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		if err != nil {
 			return fmt.Errorf("Could not scan cluster: %s", err)
 		}
-		writer := *w
 		json, _ := json.Marshal(map[string]interface{}{"results": result, "query": action.Key}) //Use in javacript: window.atob to decode base64 into json/string if you saved it as that
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusOK)
-		writer.Write(json)
+		(*w).Header().Set("Content-Type", "application/json")
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(json)
 		return nil
 	case SERVE_PUT_KV:
 		defer r.Body.Close()
@@ -491,11 +487,11 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		if err != nil {
 			return fmt.Errorf("Could not write key to cluster: %s", err)
 		}
-		writer := *w
+
 		json, _ := json.Marshal(map[string]interface{}{"ok": true})
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusOK)
-		writer.Write(json)
+		(*w).Header().Set("Content-Type", "application/json")
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(json)
 		return nil
 	default:
 		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)

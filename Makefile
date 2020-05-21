@@ -45,7 +45,7 @@ ifneq ($(ROCKSDB_INC_PATH),)
 CGO_CXXFLAGS=CGO_CFLAGS="-I$(ROCKSDB_INC_PATH)"
 endif
 CGO_LDFLAGS=CGO_LDFLAGS="$(CDEPS_LDFLAGS)"
-GOCMD=$(CGO_LDFLAGS) $(CGO_CXXFLAGS) go build -v
+GOCMD=$(CGO_LDFLAGS) $(CGO_CXXFLAGS) go build -v -gcflags=all="-N -l"
 
 all: roo
 

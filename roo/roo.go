@@ -535,11 +535,10 @@ func main() {
 // Serve APIs
 ////////////////////////////////////////
 func serveWithArgs(c *Configuration, w *http.ResponseWriter, r *http.Request, args *ServiceArgs) error {
-	s := c.API
-	if s != nil && s.Session != nil {
-		if err := s.Session.serve(w, r, args); err != nil {
+	if c != nil && c.API != nil && c.API.Session != nil {
+		if err := c.API.Session.serve(w, r, args); err != nil {
 			if c.Debug {
-				fmt.Printf("[ERROR] Serving to %s: %s\n", s.Service, err)
+				fmt.Printf("[ERROR] Serving to %s: %s\n", c.API.Service, err)
 			}
 			return err
 		}

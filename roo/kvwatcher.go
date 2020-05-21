@@ -70,17 +70,17 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
 				if leader == kvs.AppConfig.Cluster.NodeID {
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2)*time.Second)
-					defer cancel()
 					membership, err := kvs.nh.SyncGetClusterMembership(ctx, kvs.AppConfig.Cluster.Group)
+					cancel()
 					for nodeid, node := range membership.Nodes {
 						host, _, _ := net.SplitHostPort(node)
 						if err == nil {
 							r, _ := http.NewRequest("GET", "http://"+host+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/status", nil) //TODO: https
 							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(12*time.Second))
-							defer cancel()
 							r = r.WithContext(ctx)
 							client := &http.Client{}
-							resp, err := client.Do(r)							
+							resp, err := client.Do(r)
+							cancel()
 							if resp != nil {
 								defer resp.Body.Close()
 							}
