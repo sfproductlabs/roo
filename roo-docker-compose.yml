@@ -2,6 +2,7 @@ version: "3.7"
 services:
   roo:
     image: sfproductlabs/roo:latest
+    # command: valgrind --tool=memcheck --vgdb=yes --leak-check=yes --track-origins=yes --progress-interval=600 /app/roo/rood /app/roo/roo/config.json
     # command: tail -F test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -31,7 +32,10 @@ services:
       - ROO_RESOLVER=127.0.0.11
       - ROO_START_DELAY=10
       - ROO_ACME_STAGING=false
-
+    logging:
+      options:
+          max-size: "50m"
+          
 networks:
   forenet:
     driver: overlay
