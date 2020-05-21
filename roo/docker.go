@@ -51,5 +51,7 @@ func GetDockerRoutes() ([]Route, error) {
 		}
 
 	}
+	ctx.Done()
+	cli.Close()
 	return conz, nil
 }
