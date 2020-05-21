@@ -30,7 +30,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 		return
 	}
 	//Then check the kv-cluster
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(3*time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 	defer cancel()
 
 	if destination, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: GET, Key: requestKey}); err != nil || len(destination.([]byte)) == 0 {
