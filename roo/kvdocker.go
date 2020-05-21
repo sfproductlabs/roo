@@ -50,6 +50,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"regexp"
 	"runtime"
@@ -173,7 +174,19 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 							r, _ := http.NewRequest("POST", "http://"+matches[1]+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/swarm", nil) //TODO: https
 							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 							r = r.WithContext(ctx)
-							client := &http.Client{}
+							client := &http.Client{
+								Transport: &http.Transport{
+									DisableKeepAlives: true,
+									DialContext: (&net.Dialer{
+										Timeout:   30 * time.Second,
+										KeepAlive: 30 * time.Second,
+									}).DialContext,
+									TLSHandshakeTimeout:   10 * time.Second,
+									ResponseHeaderTimeout: 10 * time.Second,
+									ExpectContinueTimeout: 1 * time.Second,
+								},
+								Timeout: 60 * time.Second,
+							}
 							resp, err := client.Do(r)
 							cancel()
 							if resp != nil {
