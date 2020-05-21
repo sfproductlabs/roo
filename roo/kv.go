@@ -69,7 +69,7 @@ import (
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
 	"github.com/lni/dragonboat/v3/logger"
-	rdb "github.com/lni/dragonboat/v3/plugin/rocksdb"
+	//rdb "github.com/lni/dragonboat/v3/plugin/rocksdb"
 )
 
 //////////////////////////////////////// C*
@@ -147,7 +147,7 @@ func (kvs *KvService) connect() error {
 		RTTMillisecond: 200,
 		RaftAddress:    kvs.AppConfig.Cluster.Binding + KV_PORT,
 		LogDBConfig:    config.GetTinyMemLogDBConfig(),
-		LogDBFactory:   rdb.NewLogDB,
+		//LogDBFactory:   rdb.NewLogDB,
 	}
 	nh, err := dragonboat.NewNodeHost(nhc)
 	if err != nil {
