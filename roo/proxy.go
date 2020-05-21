@@ -66,7 +66,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 			BufferPool: configuration.ProxySharedBufferPool,
 			Transport:  customTransport,
 		}
-		configuration.ProxyCache.Set(r.Host, proxy, cache.DefaultExpiration)
+		configuration.ProxyCache.Set(requestKey, proxy, cache.DefaultExpiration)
 		proxy.ServeHTTP(w, r)
 	}
 
