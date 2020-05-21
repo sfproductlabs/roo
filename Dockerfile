@@ -16,6 +16,7 @@ RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
   jq \
   librocksdb-dev \
   ca-certificates \
+  valgrind \
   && apt autoclean -y \
   && apt autoremove -y \
   && rm -rf /var/lib/apt/lists/* 
