@@ -57,6 +57,10 @@ JOB DONE!
 ### Zeroconfig of docker swarm services
 You need to tell roo what the incoming hostname etc is and where to route it to in the docker-compose file (if you want to go fully automoatic)
 
+### Letsencrypt caveats
+Please be extremely careful, letsencrypt/acme have weekly limits (which are super low) that will ban you from getting certificates for a week. Please use the staging setting in the roo-docker-compose-file. 
+
+https://letsencrypt.org/docs/rate-limits/
 
 ### Going Manual
 Roo comes with a clustered Distributed Key-Value (KV) Store (See the API below for access). You can use this to manually configure roo. To add the route and do the zeroconfig example above manually, do this instead:
