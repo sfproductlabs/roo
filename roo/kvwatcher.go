@@ -70,16 +70,14 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 			case <-ticker.C:
 				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
 				if leader == kvs.AppConfig.Cluster.NodeID {
-					cctx, ccancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Second)
-					membership, cerr := kvs.nh.SyncGetClusterMembership(cctx, kvs.AppConfig.Cluster.Group)
-					cctx.Done()
-					ccancel()
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Second)
+					membership, cerr := kvs.nh.SyncGetClusterMembership(ctx, kvs.AppConfig.Cluster.Group)
+					ctx.Done()
+					cancel()
 					if cerr == nil {
 						for nodeid, node := range membership.Nodes {
 							host, _, _ := net.SplitHostPort(node)
 							r, _ := http.NewRequest("GET", "http://"+host+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/status", nil) //TODO: https
-							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(12*time.Second))
-							r = r.WithContext(ctx)
 							client := &http.Client{
 								Transport: &http.Transport{
 									DisableKeepAlives: true,
@@ -88,8 +86,6 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 								Timeout: 12 * time.Second,
 							}
 							resp, err := client.Do(r)
-							ctx.Done()
-							cancel()
 							if resp != nil {
 								ioutil.ReadAll(resp.Body)
 								defer resp.Body.Close()
