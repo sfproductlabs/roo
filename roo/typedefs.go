@@ -151,6 +151,7 @@ type Configuration struct {
 	ProxyDailyLimitChecker   string //Service, Ex. casssandra
 	ProxyDailyLimitCheck     func(string) uint64
 	ProxyCache               *cache.Cache
+	Proxies                  map[string]RooProxy
 	ProxySharedBufferPool    httputil.BufferPool
 	Debug                    bool
 	UrlFilter                string
@@ -186,4 +187,9 @@ type Route struct {
 	DestinationScheme string
 	DestinationHost   string
 	DestinationPort   string
+}
+
+type RooProxy struct {
+	Route *Route
+	Proxy *httputil.ReverseProxy
 }
