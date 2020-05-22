@@ -135,6 +135,11 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 ansible docker-hosts -a "docker stats --no-stream"
 ```
 
+* Or go deeper:
+```
+ansible docker -a "bash -c 'ps waux'" | grep -E "(rood)"
+```
+
 This will get a realtime snapshot on all your machines in your swarm.
 
 #### Get some profiling info
