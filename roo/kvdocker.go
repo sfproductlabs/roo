@@ -102,8 +102,8 @@ func (kvs *KvService) updateFromSwarm(updateRole bool) error {
 			Val:    []byte{},
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
 		kvs.execute(ctx, action) //just try and write
+		cancel()
 	}
 	//ACTUALLY WRITE ROUTES TO KV
 	if err == nil {
@@ -119,8 +119,8 @@ func (kvs *KvService) updateFromSwarm(updateRole bool) error {
 		go func() {
 			for _, action := range actions {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-				defer cancel()
 				_, err = kvs.execute(ctx, &action)
+				cancel()
 				if err != nil {
 					rlog.Warningf("Could not write route: %v to cluster: %v", action, err)
 				}

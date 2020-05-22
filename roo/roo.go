@@ -344,8 +344,8 @@ func main() {
 
 	//////////////////////////////////////// SETUP API - INTERNAL NETWORK PORT :6299 (default) AS NOT EXPOSED
 	//TODO: ADD SSL SUPPORT
-	rtrm := http.TimeoutHandler(rtr, time.Second*12, "") //Can stack these
-	go http.ListenAndServe(API_PORT, rtrm)
+	//rtrm := http.TimeoutHandler(rtr, time.Second*60, "") //Can stack these
+	go http.ListenAndServe(API_PORT, rtr)
 
 	//////////////////////////////////////// LOAD CLUSTER
 	{
