@@ -69,21 +69,21 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 			case <-ticker.C:
 				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
 				if leader == kvs.AppConfig.Cluster.NodeID {
-					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2)*time.Second)
-					membership, err := kvs.nh.SyncGetClusterMembership(ctx, kvs.AppConfig.Cluster.Group)
-					cancel()
-					for nodeid, node := range membership.Nodes {
-						host, _, _ := net.SplitHostPort(node)
-						if err == nil {
+					cctx, ccancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Second)
+					membership, cerr := kvs.nh.SyncGetClusterMembership(cctx, kvs.AppConfig.Cluster.Group)
+					ccancel()
+					if cerr == nil {
+						for nodeid, node := range membership.Nodes {
+							host, _, _ := net.SplitHostPort(node)
 							r, _ := http.NewRequest("GET", "http://"+host+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/status", nil) //TODO: https
 							ctx, cancel := context.WithTimeout(r.Context(), time.Duration(12*time.Second))
 							r = r.WithContext(ctx)
 							client := &http.Client{
 								Transport: &http.Transport{
 									DisableKeepAlives: true,
-									Dial:              TimeoutDialer(12*time.Second, 30*time.Second),
+									Dial:              TimeoutDialer(12*time.Second, 12*time.Second),
 								},
-								Timeout: 60 * time.Second,
+								Timeout: 12 * time.Second,
 							}
 							resp, err := client.Do(r)
 							cancel()
@@ -115,6 +115,8 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 								}
 							}
 						}
+					} else {
+						rlog.Infof("[INFO] Couldn't get membership in watcher.")
 					}
 				}
 			case <-leaderStopper.ShouldStop():
