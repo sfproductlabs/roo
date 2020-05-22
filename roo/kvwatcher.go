@@ -50,6 +50,7 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -90,6 +91,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 							ctx.Done()
 							cancel()
 							if resp != nil {
+								ioutil.ReadAll(resp.Body)
 								defer resp.Body.Close()
 							}
 							client.CloseIdleConnections()
