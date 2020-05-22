@@ -50,6 +50,7 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"runtime"
@@ -183,7 +184,8 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 							resp, err := client.Do(r)
 							cancel()
 							if resp != nil {
-								defer resp.Body.Close()
+								ioutil.ReadAll(resp.Body)
+								resp.Body.Close()
 							}
 							client.CloseIdleConnections()
 							//Do only once
