@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -25,14 +24,17 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 	}
 	requestKey := HOST_PREFIX + r.Host + scheme
 	//Check the local cached proxy list
-	if p, found := configuration.ProxyCache.Get(requestKey); found {
-		p.(*httputil.ReverseProxy).ServeHTTP(w, r)
+	rp, exists := configuration.Proxies[requestKey]
+	if _, found := configuration.ProxyCache.Get(requestKey); found && exists {
+		rp.Proxy.ServeHTTP(w, r)
 		return
 	}
+
 	//Then check the kv-cluster
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(4*time.Second))
 	defer cancel()
 
+	//Check for updates/validity
 	if destination, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: GET, Key: requestKey}); err != nil || len(destination.([]byte)) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(HOST_NOT_FOUND))
@@ -46,8 +48,21 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 		}
 		destination, err := url.Parse(string(dest))
 		if err != nil {
-			fmt.Printf("Could not route from %s to %s, bad destination\n", r.Host, string(dest))
+			rlog.Warningf("Could not route from %s to %s, bad destination\n", r.Host, string(dest))
 		}
+		if exists {
+			//Only update proxy if there are changes
+			if destination.Scheme != rp.Route.DestinationScheme || destination.Host != rp.Route.DestinationHost {
+				delete(configuration.Proxies, requestKey)
+				//TODO: AG, further pruning may be necessary
+				rlog.Warningf("Pruning and replacing updated proxy from %s %s to %+v", scheme, r.Host, dest)
+			} else {
+				configuration.ProxyCache.Set(requestKey, true, cache.DefaultExpiration)
+				rp.Proxy.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		director := func(req *http.Request) {
 			req.Header.Add("X-Forwarded-For", req.Header.Get("X-Forwarded-For"))
 			req.Header.Add("X-Forwarded-Host", req.Host)
@@ -66,7 +81,16 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 			BufferPool: configuration.ProxySharedBufferPool,
 			Transport:  customTransport,
 		}
-		configuration.ProxyCache.Set(requestKey, proxy, cache.DefaultExpiration)
+		configuration.Proxies[requestKey] = RooProxy{
+			Proxy: proxy,
+			Route: &Route{
+				OriginScheme:      scheme,
+				OriginHost:        r.Host,
+				DestinationHost:   destination.Host,
+				DestinationScheme: destination.Scheme,
+			},
+		}
+		configuration.ProxyCache.Set(requestKey, true, cache.DefaultExpiration)
 		proxy.ServeHTTP(w, r)
 	}
 

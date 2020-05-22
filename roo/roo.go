@@ -432,6 +432,7 @@ func main() {
 	}
 
 	//////////////////////////////////////// PROXY EVERYTHING
+	configuration.Proxies = make(map[string]RooProxy)
 	configuration.ProxyCache = cache.New(60*time.Second, 90*time.Second)
 	configuration.ProxySharedBufferPool = newBufferPool()
 	acmeURL := ACME_PRODUCTION
