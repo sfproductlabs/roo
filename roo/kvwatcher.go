@@ -71,6 +71,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 				if leader == kvs.AppConfig.Cluster.NodeID {
 					cctx, ccancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Second)
 					membership, cerr := kvs.nh.SyncGetClusterMembership(cctx, kvs.AppConfig.Cluster.Group)
+					cctx.Done()
 					ccancel()
 					if cerr == nil {
 						for nodeid, node := range membership.Nodes {
@@ -86,6 +87,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 								Timeout: 12 * time.Second,
 							}
 							resp, err := client.Do(r)
+							ctx.Done()
 							cancel()
 							if resp != nil {
 								defer resp.Body.Close()
