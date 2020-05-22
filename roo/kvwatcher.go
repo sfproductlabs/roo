@@ -88,7 +88,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 							resp, err := client.Do(r)
 							if resp != nil {
 								ioutil.ReadAll(resp.Body)
-								defer resp.Body.Close()
+								resp.Body.Close()
 							}
 							client.CloseIdleConnections()
 							if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
