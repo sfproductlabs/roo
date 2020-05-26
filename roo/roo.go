@@ -87,10 +87,10 @@ func main() {
 	}
 	fmt.Println("Configuration file: ", configFile)
 	file, _ := os.Open(configFile)
-	defer file.Close()
 	decoder := json.NewDecoder(file)
 	configuration := Configuration{}
 	err := decoder.Decode(&configuration)
+	file.Close()
 	if err != nil {
 		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
 	}
