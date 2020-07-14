@@ -298,6 +298,7 @@ docker node ls
 ### Setup roo
 
 ```sh
+docker node update --label-add load_balancer=true manager1 && \
 docker node update --label-add load_balancer=true docker1 && \
 docker node update --label-add load_balancer=true docker2 && \
 docker node update --label-add load_balancer=true docker3 && \
@@ -329,6 +330,12 @@ curl -X GET http://tasks.roo_roo:6299/roo/v1/kvs
 #### Check the service log
 ```sh
 docker service logs roo_roo -f
+docker service ps roo_roo
+```
+
+#### Use Ansible
+```sh
+ansible workers -a "ip addr"
 ```
 
 ## Andrew's DevOps Setup (Yuck! But we have to do it)
