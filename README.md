@@ -7,7 +7,7 @@
 
 ## TL;DR
 
-This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). I setup a cluster, and publish a new domain in around 30 seconds now.
+This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). You can setup a cluster, and publish a new domain in around 30 seconds.
 
 All you need to do is add a few lines to your docker-compose file and Roo does the rest:
 ```yaml
