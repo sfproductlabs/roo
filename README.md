@@ -5,7 +5,9 @@
 
 # Roo (Beta)
 
-**TL;DR** This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). I setup a cluster, and publish a new domain in around 30 seconds now.
+## TL;DR
+
+This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). I setup a cluster, and publish a new domain in around 30 seconds now.
 
 All you need to do is add a few lines to your docker-compose file and Roo does the rest:
 ```yaml
@@ -18,6 +20,8 @@ All you need to do is add a few lines to your docker-compose file and Roo does t
 ```
 
 [See a line-by-line run-through example setup](https://github.com/sfproductlabs/roo#getting-started-complete-run-through-example-on-hetzner)
+
+## Introduction
 
 ![Roo functional diagram](misc/Roo.png)
 
