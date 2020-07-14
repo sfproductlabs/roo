@@ -78,7 +78,15 @@ hcloud server list -o columns=name -o noheader | xargs -P 8 -I {} hcloud server 
 
 ### Setup the docker swarm
 
-Get on the manager node ```eval `ssh-agent` && ssh-add ~/.ssh/id_rsa && ssh -l root -A $(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}')``` and run:
+Get on the manager1 node: 
+
+```sh
+eval `ssh-agent` && ssh-add ~/.ssh/id_rsa #only required on a mac
+ssh -l root -A $(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}')
+```
+
+Then run:
+
 ```sh
 apt-get update && \
 apt-get upgrade -y && \
