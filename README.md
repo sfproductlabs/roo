@@ -33,6 +33,123 @@ The power Roo gives you is to add HTTPS://example1.com and HTTPS://example2.com 
 
 Roo itself is clustered. Every machine it runs on shares the load to your services. It's distributed store shares certificates from Letsencrypt used across all your nodes. Now apple is denying certificates older than a year, I feel as a dev, that lets encrypt is almost mandatory as it creates a lot of admin.
 
+
+## Getting Started (on docker)
+
+* Want to just run it?
+```
+docker run sfproductlabs/roo:latest
+```
+
+## Getting Started (complete run-through example on Hetzner)
+
+### Setup the physical nodes
+This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't personally recommend Hetzner yet - the service isn't as good as I'd like - but it is improving.
+
+```sh
+brew install hcloud #mac
+#sudo apt install hcloud-cli #debian/ubuntu
+#create a project in hetzner called test (https://console.hetzner.cloud/projects)
+#create a api key in the project you setup on hetzner
+#hcloud context create test #connect the api key to the project
+hcloud server-type list #test the connection
+hcloud server list #start with an empty project
+hcloud ssh-key create --name andy --public-key-from-file ~/.ssh/id_rsa.pub  
+hcloud network create --ip-range=10.1.0.0/16 --name=aftnet
+hcloud network add-subnet --ip-range=10.1.0.0/16 --type=server --network-zone=eu-central aftnet
+#If you want a lot more machines see the horizontal web scraper project commands (https://github.com/sfproductlabs/scrp)
+hcloud server create --name docker1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
+hcloud server create --name docker2 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
+hcloud server create --name docker3 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
+rm *.txt
+hcloud server list -o columns=name -o noheader > worker-names.txt
+hcloud server list -o columns=ipv4 -o noheader > worker-ips.txt
+cat worker-names.txt | xargs -I {} hcloud server describe -o json {} | jq -r '.private_net[0].ip' >> worker-vips.txt
+hcloud server create --name manager1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy
+hcloud server describe -o json manager1 | jq -r '.private_net[0].ip' > manager-vip.txt
+scp -o StrictHostKeyChecking=no *.txt root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
+scp -o StrictHostKeyChecking=no ansible/* root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
+scp -o StrictHostKeyChecking=no *-docker-compose.yml root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
+```
+If it stuffs up run **DANGEROUS** it will delete all your servers for the project:
+```sh
+hcloud server list -o columns=name -o noheader | xargs -P 8 -I {} hcloud server delete {}
+```
+
+### Setup the docker swarm
+
+Get on the manager node ```eval `ssh-agent` && ssh-add ~/.ssh/id_rsa && ssh -l root -A $(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}')``` and run:
+```sh
+apt-get update && \
+apt-get upgrade -y && \
+apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y && \
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - && \
+apt-key fingerprint 0EBFCD88 && \
+add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
+apt-get update && \
+apt-get install docker-ce docker-ce-cli containerd.io ansible -y && \
+docker swarm init --advertise-addr=ens10 && \
+docker swarm join-token worker | xargs | sed -r 's/^.*(docker.*).*$/\1/' > join.sh && \
+chmod +x join.sh && \
+printf "\n[defaults]\nhost_key_checking = False\n" >> /etc/ansible/ansible.cfg && \
+printf "\n[managers]\n" >> /etc/ansible/hosts && \
+cat manager-vip.txt >> /etc/ansible/hosts && \
+printf "\n[dockers]\n" >> /etc/ansible/hosts && \
+cat manager-vip.txt >> /etc/ansible/hosts && \
+cat worker-vips.txt >> /etc/ansible/hosts && \
+printf "\n[workers]\n" >> /etc/ansible/hosts && \
+cat worker-vips.txt >> /etc/ansible/hosts && \
+ansible dockers -a "uptime" && \
+printf "\n            $(cat join.sh | awk '{print $0}')" >> swarm-init.yml && \
+ansible-playbook swarm-init.yml && \
+ansible dockers -a "docker stats --no-stream" && \
+docker node ls  
+```
+
+### Setup roo
+
+```sh
+#It's required to run roo on a manager node to get the automatic updates from the docker-compose files. You don't need to serve content from it though.
+docker node update --label-add load_balancer=true manager1 && \
+docker node update --label-add load_balancer=true docker1 && \
+docker node update --label-add load_balancer=true docker2 && \
+docker node update --label-add load_balancer=true docker3 && \
+docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 && \
+docker stack deploy -c roo-docker-compose.yml roo
+```
+You can watch roo boot & status using ```docker service logs roo_roo -f``` otherwise **wait about a minute** for the services & raft-log to auto-start.
+
+#### Start a service (test)
+* Setup a test-domain and and IPs in your host-name record. 
+* Edit [test-docker-compose.yml](https://github.com/sfproductlabs/roo/blob/master/test-docker-compose.yml) and replace ```test.sfpl.io``` with the test-domain,  (make sure to set it up in your host records and use a [load-balancer](https://github.com/sfproductlabs/floater)!). 
+
+Then run:
+```sh
+docker stack deploy -c test-docker-compose.yml test
+```
+
+Go to your domain. **All Done** 
+
+#### Debug
+
+##### Check roo's distributed keystore
+```sh
+docker run -it --net=forenet alpine ash
+apk add curl
+curl -X GET http://tasks.roo_roo:6299/roo/v1/kvs
+```
+
+##### Check the service log
+```sh
+docker service logs roo_roo -f
+docker service ps roo_roo
+```
+
+##### Use Ansible
+```sh
+ansible workers -a "ip addr"
+```
+
 ## Getting Started (on swarm)
 Run this all in the docker swarm manager look [here](https://github.com/sfproductlabs/haswarm#getting-started) to get started.
 * Create the default network, for example:
@@ -241,121 +358,6 @@ docker service logs roo_roo -f
 docker run -it --net=forenet alpine ash
 nslookup tasks.roo_roo.
 curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
-```
-## Getting Started (on docker)
-
-* Want to just run it?
-```
-docker run sfproductlabs/roo:latest
-```
-
-## Getting Started (complete run-through example on Hetzner)
-
-### Setup the physical nodes
-This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't personally recommend Hetzner yet - the service isn't as good as I'd like - but it is improving.
-
-```sh
-brew install hcloud #mac
-#sudo apt install hcloud-cli #debian/ubuntu
-#create a project in hetzner called test (https://console.hetzner.cloud/projects)
-#create a api key in the project you setup on hetzner
-#hcloud context create test #connect the api key to the project
-hcloud server-type list #test the connection
-hcloud server list #start with an empty project
-hcloud ssh-key create --name andy --public-key-from-file ~/.ssh/id_rsa.pub  
-hcloud network create --ip-range=10.1.0.0/16 --name=aftnet
-hcloud network add-subnet --ip-range=10.1.0.0/16 --type=server --network-zone=eu-central aftnet
-#If you want a lot more machines see the horizontal web scraper project commands (https://github.com/sfproductlabs/scrp)
-hcloud server create --name docker1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
-hcloud server create --name docker2 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
-hcloud server create --name docker3 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
-rm *.txt
-hcloud server list -o columns=name -o noheader > worker-names.txt
-hcloud server list -o columns=ipv4 -o noheader > worker-ips.txt
-cat worker-names.txt | xargs -I {} hcloud server describe -o json {} | jq -r '.private_net[0].ip' >> worker-vips.txt
-hcloud server create --name manager1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy
-hcloud server describe -o json manager1 | jq -r '.private_net[0].ip' > manager-vip.txt
-scp -o StrictHostKeyChecking=no *.txt root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
-scp -o StrictHostKeyChecking=no ansible/* root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
-scp -o StrictHostKeyChecking=no *-docker-compose.yml root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
-```
-If it stuffs up run **DANGEROUS** it will delete all your servers for the project:
-```sh
-hcloud server list -o columns=name -o noheader | xargs -P 8 -I {} hcloud server delete {}
-```
-
-### Setup the docker swarm
-
-Get on the manager node ```eval `ssh-agent` && ssh-add ~/.ssh/id_rsa && ssh -l root -A $(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}')``` and run:
-```sh
-apt-get update && \
-apt-get upgrade -y && \
-apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y && \
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - && \
-apt-key fingerprint 0EBFCD88 && \
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
-apt-get update && \
-apt-get install docker-ce docker-ce-cli containerd.io ansible -y && \
-docker swarm init --advertise-addr=ens10 && \
-docker swarm join-token worker | xargs | sed -r 's/^.*(docker.*).*$/\1/' > join.sh && \
-chmod +x join.sh && \
-printf "\n[defaults]\nhost_key_checking = False\n" >> /etc/ansible/ansible.cfg && \
-printf "\n[managers]\n" >> /etc/ansible/hosts && \
-cat manager-vip.txt >> /etc/ansible/hosts && \
-printf "\n[dockers]\n" >> /etc/ansible/hosts && \
-cat manager-vip.txt >> /etc/ansible/hosts && \
-cat worker-vips.txt >> /etc/ansible/hosts && \
-printf "\n[workers]\n" >> /etc/ansible/hosts && \
-cat worker-vips.txt >> /etc/ansible/hosts && \
-ansible dockers -a "uptime" && \
-printf "\n            $(cat join.sh | awk '{print $0}')" >> swarm-init.yml && \
-ansible-playbook swarm-init.yml && \
-ansible dockers -a "docker stats --no-stream" && \
-docker node ls  
-```
-
-### Setup roo
-
-```sh
-#It's required to run roo on a manager node to get the automatic updates from the docker-compose files. You don't need to serve content from it though.
-docker node update --label-add load_balancer=true manager1 && \
-docker node update --label-add load_balancer=true docker1 && \
-docker node update --label-add load_balancer=true docker2 && \
-docker node update --label-add load_balancer=true docker3 && \
-docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 && \
-docker stack deploy -c roo-docker-compose.yml roo
-```
-You can watch roo boot & status using ```docker service logs roo_roo -f``` otherwise **wait about a minute** for the services & raft-log to auto-start.
-
-#### Start a service (test)
-* Setup a test-domain and and IPs in your host-name record. 
-* Edit [test-docker-compose.yml](https://github.com/sfproductlabs/roo/blob/master/test-docker-compose.yml) and replace ```test.sfpl.io``` with the test-domain,  (make sure to set it up in your host records and use a [load-balancer](https://github.com/sfproductlabs/floater)!). 
-
-Then run:
-```sh
-docker stack deploy -c test-docker-compose.yml test
-```
-
-Go to your domain. **All Done** 
-
-#### Debug
-
-##### Check roo's distributed keystore
-```sh
-docker run -it --net=forenet alpine ash
-apk add curl
-curl -X GET http://tasks.roo_roo:6299/roo/v1/kvs
-```
-
-##### Check the service log
-```sh
-docker service logs roo_roo -f
-docker service ps roo_roo
-```
-
-##### Use Ansible
-```sh
-ansible workers -a "ip addr"
 ```
 
 ## Andrew's DevOps Setup (Yuck! But we have to do it)
