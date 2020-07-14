@@ -241,8 +241,8 @@ This will set you up with a cluster on Hetzner Cloud (change the first 20 lines 
 ```sh
 brew install hcloud #mac
 #sudo apt install hcloud-cli #debian/ubuntu
-#create a project in hetzner called test
-#create a api key in hetzner
+#create a project in hetzner called test (https://console.hetzner.cloud/projects)
+#create a api key in the project you setup on hetzner
 #hcloud context create test #connect the api key to the project
 hcloud server-type list #test the connection
 hcloud server list #start with an empty project
