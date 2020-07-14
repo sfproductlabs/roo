@@ -313,7 +313,7 @@ You can watch roo boot & status using ```docker service logs roo_roo -f``` other
 
 #### Start a service (test)
 * Setup a test-domain and and IPs in your host-name record. 
-* Edit ```test-docker-compose.yml``` and replace ```test.sfpl.io``` with the test-domain,  (make sure to set it up in your host records and use a [load-balancer](https://github.com/sfproductlabs/floater)!). 
+* Edit [test-docker-compose.yml](https://github.com/sfproductlabs/roo/blob/master/test-docker-compose.yml) and replace ```test.sfpl.io``` with the test-domain,  (make sure to set it up in your host records and use a [load-balancer](https://github.com/sfproductlabs/floater)!). 
 
 Then run:
 ```sh
