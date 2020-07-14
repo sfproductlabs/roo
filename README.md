@@ -249,6 +249,7 @@ hcloud server list #start with an empty project
 hcloud ssh-key create --name andy --public-key-from-file ~/.ssh/id_rsa.pub  
 hcloud network create --ip-range=10.1.0.0/16 --name=aftnet
 hcloud network add-subnet --ip-range=10.1.0.0/16 --type=server --network-zone=eu-central aftnet
+#If you want a lot more machines see the horizontal web scraper project commands (https://github.com/sfproductlabs/scrp)
 hcloud server create --name docker1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
 hcloud server create --name docker2 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
 hcloud server create --name docker3 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
