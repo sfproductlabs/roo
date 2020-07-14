@@ -44,7 +44,7 @@ docker run sfproductlabs/roo:latest
 ## Getting Started (complete run-through example on Hetzner)
 
 ### Setup the physical nodes
-This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't personally recommend Hetzner yet - the service isn't as good as I'd like - but it is improving.
+This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't love Hetzner - the service isn't as good as I'd like - but it is improving.
 
 ```sh
 brew install hcloud #mac
@@ -153,7 +153,7 @@ docker service logs roo_roo -f
 docker service ps roo_roo
 ```
 
-##### Use Ansible
+##### Check using Ansible
 ```sh
 ansible workers -a "ip addr"
 ```
@@ -390,6 +390,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 * [ ] HTTP for Proxying Origin (Only SSL Supported atm)
 * [ ] Add end to end encryption of kv-store and distributed raft api and api:6299
 * [ ] Investigate the possibilty of a race condition between the in memory certificate/proxy cache right when letsencrypt should be renewing (might be a 10 minute window of inoperability)? Interesting thought...
+* [ ] Use Kubernetes container management (I'd like help with this one esp.!)
 
 ## Credits
 * [DragonBoat](https://github.com/lni/dragonboat)
