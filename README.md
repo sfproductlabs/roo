@@ -7,7 +7,7 @@
 
 **TL;DR** This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). I setup a cluster, and publish a new domain in around 30 seconds now.
 
-This aims to be a free replacement of Amazon's ECS (Elastic Compute Service), EKS, CertificateManager, Load-Balancer and CloudWatch using your own Docker Swarm. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this. I truly hope it benefits others too.
+This aims to be a free replacement of Amazon's ECS (Elastic Compute Service), EKS (Kubernetes), CertificateManager, Load-Balancer and CloudWatch using your own Docker Swarm. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this. I truly hope it benefits others too.
 
 If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [see how you can setup a thousand-machine cluster in just 20 lines](https://github.com/sfproductlabs/scrp#running-on-docker-swarm) (just copy + paste from there) or [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
 
@@ -229,6 +229,106 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 * Want to just run it?
 ```
 docker run sfproductlabs/roo:latest
+```
+
+## Getting Started (complete run-through example on Hetzner)
+
+### Setup the physical nodes
+This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't personally recommend Hetzner yet - the service isn't as good as I'd like - but it is improving.
+
+```sh
+brew install hcloud #mac
+#sudo apt install hcloud-cli #debian/ubuntu
+#create a project in hetzner called test
+#create a api key in hetzner
+#hcloud context create test #connect the api key to the project
+hcloud server-type list #test the connection
+hcloud server list #start with an empty project
+hcloud ssh-key create --name andy --public-key-from-file ~/.ssh/id_rsa.pub  
+hcloud network create --ip-range=10.1.0.0/16 --name=aftnet
+hcloud network add-subnet --ip-range=10.1.0.0/16 --type=server --network-zone=eu-central aftnet
+hcloud server create --name docker1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
+hcloud server create --name docker2 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
+hcloud server create --name docker3 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
+rm *.txt
+hcloud server list -o columns=name -o noheader > worker-names.txt
+hcloud server list -o columns=ipv4 -o noheader > worker-ips.txt
+cat worker-names.txt | xargs -I {} hcloud server describe -o json {} | jq -r '.private_net[0].ip' >> worker-vips.txt
+hcloud server create --name manager1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy
+hcloud server describe -o json manager1 | jq -r '.private_net[0].ip' > manager-vip.txt
+scp -o StrictHostKeyChecking=no *.txt root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
+scp -o StrictHostKeyChecking=no ansible/* root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
+scp -o StrictHostKeyChecking=no *-docker-compose.yml root@$(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}'):~/
+```
+If it stuffs up run **DANGEROUS** it will delete all your servers for the project:
+```sh
+hcloud server list -o columns=name -o noheader | xargs -P 8 -I {} hcloud server delete {}
+```
+
+### Setup the docker swarm
+
+Get on the manager node ```eval `ssh-agent` && ssh-add ~/.ssh/id_rsa && ssh -l root -A $(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}')``` and run:
+```sh
+apt-get update && \
+apt-get upgrade -y && \
+apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y && \
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - && \
+apt-key fingerprint 0EBFCD88 && \
+add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
+apt-get update && \
+apt-get install docker-ce docker-ce-cli containerd.io ansible -y && \
+docker swarm init --advertise-addr=ens10 && \
+docker swarm join-token worker | xargs | sed -r 's/^.*(docker.*).*$/\1/' > join.sh && \
+chmod +x join.sh && \
+printf "\n[defaults]\nhost_key_checking = False\n" >> /etc/ansible/ansible.cfg && \
+printf "\n[managers]\n" >> /etc/ansible/hosts && \
+cat manager-vip.txt >> /etc/ansible/hosts && \
+printf "\n[dockers]\n" >> /etc/ansible/hosts && \
+cat manager-vip.txt >> /etc/ansible/hosts && \
+cat worker-vips.txt >> /etc/ansible/hosts && \
+printf "\n[workers]\n" >> /etc/ansible/hosts && \
+cat worker-vips.txt >> /etc/ansible/hosts && \
+ansible dockers -a "uptime" && \
+printf "\n            $(cat join.sh | awk '{print $0}')" >> swarm-init.yml && \
+ansible-playbook swarm-init.yml && \
+ansible dockers -a "docker stats --no-stream" && \
+docker node ls  
+```
+
+### Setup roo
+
+```sh
+docker node update --label-add load_balancer=true docker1 && \
+docker node update --label-add load_balancer=true docker2 && \
+docker node update --label-add load_balancer=true docker3 && \
+docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24 && \
+docker stack deploy -c roo-docker-compose.yml roo
+```
+You can watch roo boot & status using ```docker service logs roo_roo -f``` otherwise **wait about a minute** for the services & raft-log to auto-start.
+
+#### Start a service (test)
+* Setup a test-domain and and IPs in your host-name record. 
+* Edit ```test-docker-compose.yml``` and replace ```test.sfpl.io``` with the test-domain,  (make sure to set it up in your host records and use a [load-balancer](https://github.com/sfproductlabs/floater)!). 
+
+Then run:
+```sh
+docker stack deploy -c test-docker-compose.yml test
+```
+
+Go to your domain. **All Done** 
+
+#### Debug
+
+##### Check roo's distributed keystore
+```sh
+docker run -it --net=forenet alpine ash
+apk add curl
+curl -X GET http://tasks.roo_roo:6299/roo/v1/kvs
+```
+
+#### Check the service log
+```sh
+docker service logs roo_roo -f
 ```
 
 ## Andrew's DevOps Setup (Yuck! But we have to do it)
