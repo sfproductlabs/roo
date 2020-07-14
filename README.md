@@ -7,6 +7,8 @@
 
 **TL;DR** This basically lets you run your own load balanced Amazon AWS ECS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts etc). I setup a cluster, and publish a new domain in around 30 seconds now.
 
+[See a line-by-line run-through example setup](https://github.com/sfproductlabs/roo#getting-started-complete-run-through-example-on-hetzner)
+
 This aims to be a free replacement of Amazon's ECS (Elastic Compute Service), EKS (Kubernetes), CertificateManager, Load-Balancer and CloudWatch using your own Docker Swarm. It IS a complete replacement for nginx, traefik, haproxy, and a lot of kubernetes. The idea is to give developers back the power and take it back from ridiculous self-complicating dev-ops tools that get more complicated and less useful (for example Traefik 2 just removed support for clustered Letsencrypt from their open source version to spruik their enterprise version. Nginx and HAProxy do the same). I wasted a lot of time on their software before writing this. I truly hope it benefits others too.
 
 If you are unfamiliar with swarm/kubernetes and are a developer and want a quick intro into how powerful and easy swarm can be, [see how you can setup a thousand-machine cluster in just 20 lines](https://github.com/sfproductlabs/scrp#running-on-docker-swarm) (just copy + paste from there) or [check out my command notes](https://github.com/sfproductlabs/haswarm/blob/master/README.md). In a day I was scaling clusters up and down on my own infrastructure with single commands.
@@ -328,13 +330,13 @@ apk add curl
 curl -X GET http://tasks.roo_roo:6299/roo/v1/kvs
 ```
 
-#### Check the service log
+##### Check the service log
 ```sh
 docker service logs roo_roo -f
 docker service ps roo_roo
 ```
 
-#### Use Ansible
+##### Use Ansible
 ```sh
 ansible workers -a "ip addr"
 ```
