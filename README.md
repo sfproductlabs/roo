@@ -298,6 +298,7 @@ docker node ls
 ### Setup roo
 
 ```sh
+#It's required to run roo on a manager node to get the automatic updates from the docker-compose files. You don't need to serve content from it though.
 docker node update --label-add load_balancer=true manager1 && \
 docker node update --label-add load_balancer=true docker1 && \
 docker node update --label-add load_balancer=true docker2 && \
