@@ -3,11 +3,11 @@
 	<br>
 </div>
 
-# Roo Ingress (Beta)
+# Roo (Beta)
 
 ## TL;DR
 
-This basically lets you run your own load balanced Amazon AWS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts, no ssl setup, no single failures etc). You can setup a cluster, and publish a new domain in around 30 seconds.
+This basically lets you run your own load balanced Amazon AWS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts, no ssl setup, no single point failures etc). You can setup a cluster, and publish a new secured domain in around 30 seconds.
 
 All you need to do is add a few lines to your docker-compose file and Roo does the rest:
 ```yaml
