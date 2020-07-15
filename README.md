@@ -19,7 +19,7 @@ All you need to do is add a few lines to a docker-compose file and Roo does the 
       DestinationPort: 80
 ```
 
-[See a line-by-line run-through example setup](https://github.com/sfproductlabs/roo#getting-started-complete-run-through-example-on-hetzner)
+[See a 5 minute line-by-line run-through example setup (includes setting up physical infrastructure, virtual docker swarm infrastructure, and roo cluster that runs on top of the swarm, that handles requests and passes it to your underlying clustered services)](https://github.com/sfproductlabs/roo#getting-started-complete-run-through-example-on-hetzner)
 
 ## Introduction
 
