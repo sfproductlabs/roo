@@ -167,6 +167,10 @@ docker service ps roo_roo
 ansible workers -a "ip addr"
 ```
 
+##### More Help
+
+[Check the FAQ](https://github.com/sfproductlabs/roo#help)
+
 ## Getting Started (on swarm)
 Run this all in the docker swarm manager look [here](https://github.com/sfproductlabs/haswarm#getting-started) to get started.
 * Create the default network, for example:
