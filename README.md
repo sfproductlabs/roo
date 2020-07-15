@@ -7,9 +7,9 @@
 
 ## TL;DR
 
-This basically lets you run your own load balanced Amazon AWS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts, no ssl setup, no single failures etc). You can setup a cluster, and publish a new domain in around 30 seconds.
+This basically lets you run your own encrypted and load balanced Amazon AWS clusters on your own hardware, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts, no ssl setup, no manual ssl certification, no single point failures etc). You can setup a cluster, and publish a new domain in around 30 seconds (once you get the one time, 5 minute setup out of the way).
 
-All you need to do is add a few lines to your docker-compose file and Roo does the rest:
+All you need to do is add a few lines to a docker-compose file and Roo does the rest [see a full configuration example](https://github.com/sfproductlabs/roo/blob/master/test-docker-compose.yml):
 ```yaml
       OriginHosts: example.com,www.example.com
       OriginScheme: https
@@ -47,17 +47,24 @@ docker run sfproductlabs/roo:latest
 This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't love Hetzner - the service isn't as good as I'd like - but it is improving.
 
 ```sh
-brew install hcloud #mac
-#sudo apt install hcloud-cli #debian/ubuntu
+# mac
+brew install hcloud 
+brew install jq
+#debian/ubuntu
+#sudo apt install hcloud-cli jq
 #create a project in hetzner called test (https://console.hetzner.cloud/projects)
 #create a api key in the project you setup on hetzner
 #hcloud context create test #connect the api key to the project
-hcloud server-type list #test the connection
-hcloud server list #start with an empty project
+#test the connection
+hcloud server-type list 
+#start with an empty project (check this is empty)
+hcloud server list 
 hcloud ssh-key create --name andy --public-key-from-file ~/.ssh/id_rsa.pub  
 hcloud network create --ip-range=10.1.0.0/16 --name=aftnet
 hcloud network add-subnet --ip-range=10.1.0.0/16 --type=server --network-zone=eu-central aftnet
 #If you want a lot more machines see the horizontal web scraper project commands (https://github.com/sfproductlabs/scrp)
+#for n in {1..30}; do (hcloud server create --name docker$RANDOM$RANDOM$RANDOM$RANDOM --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 2>&1 >/dev/null &) ; done
+#watch -n 5 "echo "Press Ctrl-c to exit when your server count meets the desired amount. You will need to copy and paste just the following instructions to proceed." && hcloud server list | grep 'running' | awk 'END {print NR}'"
 hcloud server create --name docker1 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
 hcloud server create --name docker2 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
 hcloud server create --name docker3 --type cx11 --image debian-9 --datacenter nbg1-dc3 --network aftnet --ssh-key andy 
@@ -81,7 +88,9 @@ hcloud server list -o columns=name -o noheader | xargs -P 8 -I {} hcloud server 
 Get on the manager1 node: 
 
 ```sh
-eval `ssh-agent` && ssh-add ~/.ssh/id_rsa #only required on a mac
+#only required on a mac
+eval `ssh-agent` && ssh-add ~/.ssh/id_rsa 
+#now login to manager1
 ssh -l root -A $(hcloud server list -o columns=ipv4,name -o noheader | grep manager1 | awk '{print $1}')
 ```
 

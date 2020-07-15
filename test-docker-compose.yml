@@ -3,7 +3,9 @@ services:
   test:
     image: nginx
     deploy:
-      replicas: 1
+      #Set the number of instances of the app you want to run here
+      #you can use global to run a single instance on every machine instead
+      replicas: 3
     networks:
       - forenet
     labels:
