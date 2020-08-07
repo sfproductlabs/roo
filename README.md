@@ -44,7 +44,7 @@ docker run sfproductlabs/roo:latest
 ## Getting Started (complete run-through example on Hetzner Cloud)
 
 ### Setup the physical nodes
-This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't love Hetzner - the service isn't as good as I'd like - but it is improving.
+This will set you up with a cluster on Hetzner Cloud (change the first 20 lines to suit your own cloud provider). I use this on my own production servers. I don't love [Hetzner](https://hetzner.cloud/?ref=kVvYlAsUNbOF) - the service isn't as good as I'd like - but it is improving and is CHEAP (~$3 per server).
 
 ```sh
 # mac
