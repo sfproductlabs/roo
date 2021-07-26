@@ -3,7 +3,7 @@
 	<br>
 </div>
 
-# Roo (Beta)
+# Roo
 
 ## TL;DR
 
@@ -405,12 +405,5 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 * [ ] Investigate the possibilty of a race condition between the in memory certificate/proxy cache right when letsencrypt should be renewing (might be a 10 minute window of inoperability)? Interesting thought...
 * [ ] Use Kubernetes container management (I'd like help with this one esp.!)
 
-## Credits
-* [DragonBoat](https://github.com/lni/dragonboat)
-* [DragonGate](https://github.com/dioptre/DragonGate)
-* [SF Product Labs](https://sfproductlabs.com)
-
 ## Support
-I use roo commercially and in production for my startups. If you want support, email us at support@sfpl.io.
-
-If you use it or like it please let me know!
+Roo is in use commercially and in production. If you want support, email us at support@sfpl.io.
