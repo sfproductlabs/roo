@@ -6,6 +6,7 @@
 # Roo
 
 ## TL;DR
+**Roo is the opposite of Kubernetes. It's designed for sub-1 minute cluster setup times.**
 
 This basically lets you run your own encrypted and load balanced Amazon AWS clusters on your own hardware, and is a 5-minute replacement for Kubernetes, with no configuration (no additional setup for clustered kv stores, no janky config files, no defining providers, no dodgy second hand helm charts, no ssl setup, no manual ssl certification, no single point failures etc). You can setup a cluster, and publish a new domain in around 30 seconds (once you get the one time, 5 minute setup out of the way).
 
