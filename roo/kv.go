@@ -62,6 +62,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"syscall"
 	"time"
@@ -75,7 +76,8 @@ import (
 func (kvs *KvService) connect() error {
 
 	myIPs, _ := getMyIPs(true)
-	rlog.Infof("Cluster: My IPs: %s\n", getIPsString(myIPs))
+	myIPstrings := getIPsString(myIPs)
+	rlog.Infof("Cluster: My IPs: %s\n", myIPstrings)
 	if kvs.AppConfig.Cluster.Binding != "" {
 		tempBinding := kvs.AppConfig.Cluster.Binding
 		kvs.AppConfig.Cluster.Binding = ""
@@ -157,7 +159,9 @@ func (kvs *KvService) connect() error {
 	for {
 		olderThan = 0
 		for _, h := range kvs.Configuration.Hosts {
-			if h == kvs.AppConfig.Cluster.Binding {
+			if sort.Search(len(myIPstrings), func(i int) bool { return myIPstrings[i] == h }) > 0 ||
+				h == kvs.AppConfig.Cluster.Binding ||
+				net.ParseIP(h).To4() == nil {
 				continue
 			}
 		getNodeStatus:
@@ -195,9 +199,6 @@ func (kvs *KvService) connect() error {
 
 				if status.Instantiated == kvs.AppConfig.Cluster.Service.Instantiated {
 					fmt.Println("[ERROR] Shutting down instance to avoid contention.") //Will auto restart in swarm
-					if h == "::1" || h == "127.0.0.1" {
-						continue
-					}
 					os.Exit(1)
 				}
 				if status.Instantiated > kvs.AppConfig.Cluster.Service.Instantiated {
