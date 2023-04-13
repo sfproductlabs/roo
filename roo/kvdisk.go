@@ -379,11 +379,18 @@ func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
 		actionKV.Action = GET
 		actionKV.Data.Key = c
 	}
+	if c, ok := cmd.(*KVData); ok {
+		actionKV.Action = GET
+		actionKV.Data = c
+	}
+	if c, ok := cmd.(*KVAction); ok {
+		actionKV = c
+	}
 	if c, ok := cmd.([]byte); ok {
 		//is action
-		if err := json.Unmarshal(c, actionKV); err != nil {
+		if err := json.Unmarshal(c, actionKV); err != nil || actionKV.Action == "" {
 			//is kv
-			if err := json.Unmarshal(c, actionKV.Data); err == nil {
+			if err := json.Unmarshal(c, actionKV.Data); err == nil && actionKV.Data.Key != "" {
 				actionKV.Action = GET
 			} else {
 				//is something else
@@ -391,13 +398,6 @@ func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
 				actionKV.Data.Key = string(c[:])
 			}
 		}
-	}
-	if c, ok := cmd.(*KVData); ok {
-		actionKV.Action = GET
-		actionKV.Data = c
-	}
-	if c, ok := cmd.(*KVAction); ok {
-		actionKV = c
 	}
 	switch actionKV.Action {
 	case SCAN:
@@ -461,11 +461,15 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 	wb := db.db.NewBatch()
 	defer wb.Close()
 	for idx, e := range ents {
-		dataKV := &KVData{}
-		if err := json.Unmarshal(e.Cmd, dataKV); err != nil {
-			panic(err)
+		actionKV := &KVAction{Data: &KVData{}}
+		erru := json.Unmarshal(e.Cmd, actionKV)
+		if erru != nil {
+			erru = json.Unmarshal(e.Cmd, actionKV.Data)
+			if erru != nil {
+				panic(erru)
+			}
 		}
-		wb.Set([]byte(dataKV.Key), []byte(dataKV.Val), db.wo)
+		wb.Set([]byte(actionKV.Data.Key), []byte(actionKV.Data.Val), db.wo)
 		ents[idx].Result = sm.Result{Value: uint64(len(ents[idx].Cmd))}
 	}
 	// save the applied index to the DB.
