@@ -54,6 +54,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -369,24 +370,47 @@ func main() {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
 				if configuration.Test {
 					go func() {
-						time.Sleep(30 * time.Second)
-						log.Println("[TESTING EXTERNAL API 1M READS]")
-						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4*time.Second))
-						defer cancel()
-						log.Println("[STARTED EXTERNAL]")
+						log.Println("[TESTING INTERNAL API 1M READS/WRITES]")
+						db, _ := createDB(testDBDirName + "/_testing")
+						// log.Println("[STARTED INTERNAL - WRITE]")
+						// for i := 0; i < 1000000; i++ {
+						// 	db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
+						// }
+						// log.Println("[STOPPED INTERNAL - WRITE]")
+						log.Println("[STARTED INTERNAL - READ]")
+						rand.Seed(time.Now().UnixNano())
+						min := 0
+						max := 999999
 						for i := 0; i < 1000000; i++ {
-							kv.nh.SyncRead(ctx, kv.AppConfig.Cluster.ShardID, "test")
+							if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
+								closer.Close()
+							}
 						}
-						log.Println("[STOPPED EXTERNAL]")
-						// cs := kv.nh.GetNoOPSession(kv.AppConfig.Cluster.ShardID)
-						// kvdata, _ := json.Marshal(&KVAction{
-						// 	Data: &KVData{
-						// 		Key: "test",
-						// 		Val: []byte("test"),
-						// 	},
-						// })
-						// res, errx := kv.nh.SyncPropose(ctx, cs, kvdata)
-
+						log.Println("[STOPPED INTERNAL - READ]")
+						time.Sleep(30 * time.Second)
+						log.Println("[TESTING EXTERNAL API 1M READS/WRITES]")
+						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(30*time.Second))
+						defer cancel()
+						log.Println("[STARTED EXTERNAL - READ]")
+						for i := 0; i < 1000000; i++ {
+							kv.nh.SyncRead(ctx, kv.AppConfig.Cluster.ShardID, "_test")
+						}
+						log.Println("[STOPPED EXTERNAL - READ]")
+						cs := kv.nh.GetNoOPSession(kv.AppConfig.Cluster.ShardID)
+						kvdata, _ := json.Marshal(&KVAction{
+							Data: &KVData{
+								Key: "_test",
+								Val: []byte("_test"),
+							},
+						})
+						log.Println("[STARTED EXTERNAL - WRITE]")
+						if _, err := kv.nh.SyncPropose(ctx, cs, kvdata); err != nil {
+							log.Println("[ERROR WRITING]", err)
+						}
+						for i := 0; i < 1000000; i++ {
+							kv.nh.SyncPropose(ctx, cs, kvdata)
+						}
+						log.Println("[STOPPED EXTERNAL - WRITE]")
 					}()
 				}
 			}

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -463,9 +464,10 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 	for idx, e := range ents {
 		actionKV := &KVAction{Data: &KVData{}}
 		erru := json.Unmarshal(e.Cmd, actionKV)
-		if erru != nil {
+		if erru != nil || actionKV.Data.Key == "" {
 			erru = json.Unmarshal(e.Cmd, actionKV.Data)
-			if erru != nil {
+			if erru != nil || actionKV.Data.Key == "" {
+				log.Println("[ERROR] Can't update empty/unknown key %e", erru)
 				panic(erru)
 			}
 		}

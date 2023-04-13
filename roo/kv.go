@@ -552,6 +552,9 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			return result, nil
 		}
 	case PUT:
+		if action.Data.Key == "" {
+			return nil, fmt.Errorf("Key missing %s", action.Action)
+		}
 		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
 		kvdata, err := json.Marshal(action)
 		if err != nil {
