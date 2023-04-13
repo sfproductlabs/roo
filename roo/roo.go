@@ -63,6 +63,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cockroachdb/pebble"
 	"github.com/gorilla/mux"
 	"github.com/lni/dragonboat/v4/logger"
 	"github.com/patrickmn/go-cache"
@@ -401,20 +402,20 @@ func main() {
 						rand.Seed(time.Now().UnixNano())
 						min := 0
 						max := 999999
-						// rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
-						// db, _ := createDB(testDBDirName + "/_testing")
-						// rlog.Infof("[STARTED INTERNAL - WRITE]")
-						// for i := 0; i < 1000000; i++ {
-						// 	db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
-						// }
-						// rlog.Infof("[STOPPED INTERNAL - WRITE]")
-						// rlog.Infof("[STARTED INTERNAL - READ]")
-						// for i := 0; i < 1000000; i++ {
-						// 	if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
-						// 		closer.Close()
-						// 	}
-						// }
-						// rlog.Infof("[STOPPED INTERNAL - READ]")
+						rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
+						db, _ := createDB(testDBDirName + "/_testing")
+						rlog.Infof("[STARTED INTERNAL - WRITE]")
+						for i := 0; i < 1000000; i++ {
+							db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
+						}
+						rlog.Infof("[STOPPED INTERNAL - WRITE]")
+						rlog.Infof("[STARTED INTERNAL - READ]")
+						for i := 0; i < 1000000; i++ {
+							if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
+								closer.Close()
+							}
+						}
+						rlog.Infof("[STOPPED INTERNAL - READ]")
 						rlog.Infof("[TESTING EXTERNAL API 1M READS/WRITES]")
 						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3600*time.Second))
 						defer cancel()
