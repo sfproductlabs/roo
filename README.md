@@ -41,6 +41,13 @@ Roo itself is clustered. Every machine it runs on shares the load to your servic
 ```
 docker run sfproductlabs/roo:latest
 ```
+* Want to compile and run?
+```sh
+git mod download
+make
+# update the config if you need
+rood ./config.json
+```
 
 ### Cluster API Endpoints
 * Write a record to the KV Store - PUT http://localhost:6299/roo/v1/kvs/hop Ex. ```curl -X POST -i http://localhost:6299/roo/v1/kv/hop --data 'scotch'```
