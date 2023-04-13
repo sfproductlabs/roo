@@ -159,6 +159,7 @@ func (kvs *KvService) connect() error {
 	for {
 		olderThan = 0
 		for _, h := range kvs.Configuration.Hosts {
+			fmt.Println(h)
 			if sort.Search(len(myIPstrings), func(i int) bool { return myIPstrings[i] == h }) > 0 ||
 				h == kvs.AppConfig.Cluster.Binding ||
 				net.ParseIP(h).To4() == nil {

@@ -229,12 +229,8 @@ func main() {
 	}).Methods("GET")
 	//////////////////////////////////////// STATUS
 	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/status", func(w http.ResponseWriter, r *http.Request) {
-		client := configuration.Cluster.Binding
-		if client == "" {
-			client = getIP(r)
-		}
 		status := &ClusterStatus{
-			Client:       client,
+			Client:       getIP(r),
 			Binding:      configuration.Cluster.Binding,
 			Conns:        configuration.MaximumConnections - len(connc),
 			ReplicaID:    configuration.Cluster.ReplicaID,
