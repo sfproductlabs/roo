@@ -99,8 +99,10 @@ func (kvs *KvService) updateFromSwarm(updateRole bool) error {
 		}
 		action := &KVAction{
 			Action: PUT,
-			Key:    rolePrefix + kvs.AppConfig.Cluster.Binding,
-			Val:    []byte{},
+			Data: &KVData{
+				Key: rolePrefix + kvs.AppConfig.Cluster.Binding,
+				Val: []byte{},
+			},
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		kvs.execute(ctx, action) //just try and write
@@ -112,8 +114,10 @@ func (kvs *KvService) updateFromSwarm(updateRole bool) error {
 		for _, rt := range routes {
 			actions = append(actions, KVAction{
 				Action: PUT,
-				Key:    rt.GetKey(),
-				Val:    []byte(rt.GetValue()),
+				Data: &KVData{
+					Key: rt.GetKey(),
+					Val: []byte(rt.GetValue()),
+				},
 			})
 		}
 		//TODO: Batching from actions
@@ -159,14 +163,16 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 				if leader == kvs.AppConfig.Cluster.ReplicaID {
 					action := &KVAction{
 						Action: SCAN,
-						Key:    SWARM_MANAGER_PREFIX,
+						Data: &KVData{
+							Key: SWARM_MANAGER_PREFIX,
+						},
 					}
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(kvs.AppConfig.SwarmRefreshSeconds-1)*time.Second)
 					result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.ShardID, action)
 					cancel()
 					if err == nil {
 						items := result.(map[string][]byte)
-						for i, _ := range items {
+						for i := range items {
 							matches := regex.FindStringSubmatch(i)
 							if len(matches) < 2 {
 								continue

@@ -35,7 +35,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 	defer cancel()
 
 	//Check for updates/validity
-	if destination, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: GET, Key: requestKey}); err != nil || len(destination.([]byte)) == 0 {
+	if destination, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: GET, Data: &KVData{Key: requestKey}}); err != nil || len(destination.([]byte)) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(HOST_NOT_FOUND))
 		return

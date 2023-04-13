@@ -461,7 +461,7 @@ func main() {
 			//Then check the kv-cluster
 			ctx, cancel := context.WithTimeout(ctx, time.Duration(3*time.Second))
 			defer cancel()
-			if hosts, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: SCAN, Key: HOST_PREFIX + name}); err != nil || len(hosts.(map[string][]byte)) == 0 {
+			if hosts, err := configuration.Cluster.Service.Session.(*KvService).execute(ctx, &KVAction{Action: SCAN, Data: &KVData{Key: HOST_PREFIX + name}}); err != nil || len(hosts.(map[string][]byte)) == 0 {
 				configuration.HostCache.Set(name, false, cache.DefaultExpiration)
 				rlog.Warningf("[HOSTNAME] Invalid check failed for %s\n", name)
 				return fmt.Errorf("Hostname Check Failed")

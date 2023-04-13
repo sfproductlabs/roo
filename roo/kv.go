@@ -308,8 +308,10 @@ rejoin:
 			{
 				action := &KVAction{
 					Action: PUT,
-					Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
-					Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.ReplicaID, 10)),
+					Data: &KVData{
+						Key: PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
+						Val: []byte(strconv.FormatUint(kvs.AppConfig.Cluster.ReplicaID, 10)),
+					},
 				}
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
@@ -326,8 +328,10 @@ rejoin:
 					time.Sleep(time.Duration(BOOTSTRAP_WAIT_S/2) * time.Second)
 					started := &KVAction{
 						Action: PUT,
-						Key:    ROO_STARTED,
-						Val:    []byte(strconv.FormatBool(true)),
+						Data: &KVData{
+							Key: ROO_STARTED,
+							Val: []byte(strconv.FormatBool(true)),
+						},
 					}
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
@@ -400,7 +404,9 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 				nodestring := strconv.FormatUint(cs.ReplicaID, 10)
 				action := &KVAction{
 					Action: GET,
-					Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
+					Data: &KVData{
+						Key: PEER_PREFIX + cs.Binding + NODE_POSTFIX,
+					},
 				}
 				if result, err := kvs.execute(r.Context(), action); err == nil {
 					if result != nil && string(result.([]byte)) != nodestring {
@@ -421,8 +427,10 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 					if res.Completed() {
 						action = &KVAction{
 							Action: PUT,
-							Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
-							Val:    []byte(nodestring),
+							Data: &KVData{
+								Key: PEER_PREFIX + cs.Binding + NODE_POSTFIX,
+								Val: []byte(nodestring),
+							},
 						}
 						if _, err := kvs.execute(r.Context(), action); err != nil {
 							return err
@@ -443,7 +451,9 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 	case SERVE_GET_KV:
 		action := &KVAction{
 			Action: GET,
-			Key:    (*s.Values)["key"],
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+			},
 		}
 		result, err := kvs.execute(r.Context(), action)
 		if err != nil {
@@ -455,16 +465,18 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 	case SERVE_GET_KVS:
 		action := &KVAction{
 			Action: SCAN,
-			Key:    (*s.Values)["key"],
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+			},
 		}
-		if len(action.Key) > 0 && action.Key[0] == '/' {
-			action.Key = action.Key[1:]
+		if len(action.Data.Key) > 0 && action.Data.Key[0] == '/' {
+			action.Data.Key = action.Data.Key[1:]
 		}
 		result, err := kvs.execute(r.Context(), action)
 		if err != nil {
 			return fmt.Errorf("Could not scan cluster: %s", err)
 		}
-		json, _ := json.Marshal(map[string]interface{}{"results": result, "query": action.Key}) //Use in javacript: window.atob to decode base64 into json/string if you saved it as that
+		json, _ := json.Marshal(map[string]interface{}{"results": result, "query": action.Data.Key}) //Use in javacript: window.atob to decode base64 into json/string if you saved it as that
 		(*w).Header().Set("Content-Type", "application/json")
 		(*w).WriteHeader(http.StatusOK)
 		(*w).Write(json)
@@ -477,8 +489,10 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		}
 		action := &KVAction{
 			Action: PUT,
-			Key:    (*s.Values)["key"],
-			Val:    data,
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+				Val: data,
+			},
 		}
 		_, err = kvs.execute(r.Context(), action)
 		if err != nil {
@@ -513,6 +527,9 @@ func (kvs *KvService) write(w *WriteArgs) error {
 }
 
 func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{}, error) {
+	if action.Data == nil {
+		return nil, fmt.Errorf("Key missing %s", action.Action)
+	}
 	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
 	defer cancel()
 	switch action.Action {
@@ -522,7 +539,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
 		} else {
-			rlog.Infof("[SCAN] Execute query key: %s\n", action.Key)
+			rlog.Infof("[SCAN] Execute query key: %s\n", action.Data.Key)
 			return result, nil
 		}
 	case GET:
@@ -531,14 +548,14 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
 		} else {
-			rlog.Infof("[GET] Execute query key: %s\n", action.Key)
+			rlog.Infof("[GET] Execute query key: %s\n", action.Data.Key)
 			return result, nil
 		}
 	case PUT:
 		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
 		kvdata, err := json.Marshal(action)
 		if err != nil {
-			rlog.Errorf("[PUT] Execute key: %s, error: %v", action.Key, err)
+			rlog.Errorf("[PUT] Execute key: %s, error: %v", action.Data.Key, err)
 		}
 		return kvs.nh.SyncPropose(cctx, cs, kvdata)
 	}

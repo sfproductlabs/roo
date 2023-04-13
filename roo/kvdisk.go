@@ -67,11 +67,6 @@ func syncDir(dir string) (err error) {
 	return df.Sync()
 }
 
-type KVData struct {
-	Key string
-	Val string
-}
-
 // pebbledb is a wrapper to ensure lookup() and close() can be concurrently
 // invoked. IOnDiskStateMachine.Update() and close() will never be concurrently
 // invoked.
@@ -82,6 +77,30 @@ type pebbledb struct {
 	wo     *pebble.WriteOptions
 	syncwo *pebble.WriteOptions
 	closed bool
+}
+
+func (db *pebbledb) scan(query string) (map[string][]byte, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	if db.closed {
+		return nil, errors.New("db already closed")
+	}
+	items := make(map[string][]byte)
+	it := db.db.NewIter(db.ro)
+	defer it.Close()
+	qb := []byte(query)
+	it.SeekGE(qb)
+	for ; it.Valid(); it.Next() {
+		key := it.Key()
+		val := it.Value()
+		if !bytes.HasPrefix(key, qb) {
+			break
+		}
+		v := make([]byte, len(val))
+		copy(v, val)
+		items[string(key)] = v
+	}
+	return items, nil
 }
 
 func (r *pebbledb) lookup(query []byte) ([]byte, error) {
@@ -110,6 +129,15 @@ func (r *pebbledb) close() {
 	if r.db != nil {
 		r.db.Close()
 	}
+}
+
+func (db *pebbledb) delete(query []byte) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if db.closed {
+		return errors.New("db already closed")
+	}
+	return db.db.Delete(query, db.wo)
 }
 
 // createDB creates a PebbleDB DB in the specified directory.
@@ -345,15 +373,71 @@ func (d *DiskKV) Open(stopc <-chan struct{}) (uint64, error) {
 }
 
 // Lookup queries the state machine.
-func (d *DiskKV) Lookup(key interface{}) (interface{}, error) {
+func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
+	actionKV := &KVAction{Data: &KVData{}} //Set the deafult lookup to a byte query
+	if c, ok := cmd.(string); ok {
+		actionKV.Action = GET
+		actionKV.Data.Key = c
+	}
+	if c, ok := cmd.([]byte); ok {
+		//is action
+		if err := json.Unmarshal(c, actionKV); err != nil {
+			//is kv
+			if err := json.Unmarshal(c, actionKV.Data); err == nil {
+				actionKV.Action = GET
+			} else {
+				//is something else
+				actionKV.Action = GET
+				actionKV.Data.Key = string(c[:])
+			}
+		}
+	}
+	if c, ok := cmd.(*KVData); ok {
+		actionKV.Action = GET
+		actionKV.Data = c
+	}
+	if c, ok := cmd.(*KVAction); ok {
+		actionKV = c
+	}
+	switch actionKV.Action {
+	case SCAN:
+		return d.Scan(actionKV.Data.Key)
+	default:
+		return d.Get(actionKV.Data.Key)
+	}
+}
+
+// Lookup queries the state machine.
+func (d *DiskKV) Get(key interface{}) (interface{}, error) {
 	db := (*pebbledb)(atomic.LoadPointer(&d.db))
 	if db != nil {
-		v, err := db.lookup(key.([]byte))
+		var kb []byte
+		if k, ok := key.([]byte); ok {
+			kb = k
+		} else if k, ok := key.(string); ok {
+			kb = []byte(k)
+		} else {
+			return nil, fmt.Errorf("[ERROR] Unsupported query type for key: %s", key)
+		}
+		v, err := db.lookup(kb)
 		if err == nil && d.closed {
 			panic("lookup returned valid result when DiskKV is already closed")
 		}
 		if err == pebble.ErrNotFound {
 			return v, nil
+		}
+		return v, err
+	}
+	return nil, errors.New("db closed")
+}
+
+// Gets all records prefixed with key
+func (d *DiskKV) Scan(key string) (map[string][]byte, error) {
+	db := (*pebbledb)(atomic.LoadPointer(&d.db))
+	if db != nil {
+		v, err := db.scan(key)
+		if err == nil && d.closed {
+			panic("scan returned valid result when DiskKV is already closed")
 		}
 		return v, err
 	}
@@ -442,7 +526,7 @@ func (d *DiskKV) saveToWriter(db *pebbledb,
 	for iter.First(); iteratorIsValid(iter); iter.Next() {
 		kv := &KVData{
 			Key: string(iter.Key()),
-			Val: string(iter.Value()),
+			Val: iter.Value(),
 		}
 		values = append(values, kv)
 	}
@@ -572,4 +656,18 @@ func (d *DiskKV) Close() error {
 		}
 	}
 	return nil
+}
+
+// GetHash returns a hash value representing the state of the state machine.
+func (d *DiskKV) GetHash() (uint64, error) {
+	h := md5.New()
+	db := (*pebbledb)(atomic.LoadPointer(&d.db))
+	ss := db.db.NewSnapshot()
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	if err := d.saveToWriter(db, ss, h); err != nil {
+		return 0, err
+	}
+	md5sum := h.Sum(nil)
+	return binary.LittleEndian.Uint64(md5sum[:8]), nil
 }

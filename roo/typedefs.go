@@ -23,10 +23,14 @@ type session interface {
 	serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error //Serve is for bidirectional comms
 }
 
+type KVData struct {
+	Key string
+	Val []byte
+}
+
 type KVAction struct {
 	Action string
-	Key    string
-	Val    []byte
+	Data   *KVData
 }
 
 type KeyValue struct {

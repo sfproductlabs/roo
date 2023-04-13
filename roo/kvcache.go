@@ -52,7 +52,7 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 	keyname := CACHE_PREFIX + name
 	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
-	kv := &KVAction{
+	kv := &KVData{
 		Key: keyname,
 		Val: data,
 	}
