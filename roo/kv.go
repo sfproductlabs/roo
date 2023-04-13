@@ -195,6 +195,9 @@ func (kvs *KvService) connect() error {
 
 				if status.Instantiated == kvs.AppConfig.Cluster.Service.Instantiated {
 					fmt.Println("[ERROR] Shutting down instance to avoid contention.") //Will auto restart in swarm
+					if h == "::1" || h == "127.0.0.1" {
+						continue
+					}
 					os.Exit(1)
 				}
 				if status.Instantiated > kvs.AppConfig.Cluster.Service.Instantiated {
