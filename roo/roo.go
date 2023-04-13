@@ -63,7 +63,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cockroachdb/pebble"
 	"github.com/gorilla/mux"
 	"github.com/lni/dragonboat/v4/logger"
 	"github.com/patrickmn/go-cache"
@@ -398,36 +397,40 @@ func main() {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
 				if configuration.Test {
 					go func() {
-						rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
-						db, _ := createDB(testDBDirName + "/_testing")
-						rlog.Infof("[STARTED INTERNAL - WRITE]")
-						for i := 0; i < 1000000; i++ {
-							db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
-						}
-						rlog.Infof("[STOPPED INTERNAL - WRITE]")
-						rlog.Infof("[STARTED INTERNAL - READ]")
+						time.Sleep(time.Duration(8 * time.Second))
 						rand.Seed(time.Now().UnixNano())
 						min := 0
 						max := 999999
-						for i := 0; i < 1000000; i++ {
-							if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
-								closer.Close()
-							}
-						}
-						rlog.Infof("[STOPPED INTERNAL - READ]")
+						// rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
+						// db, _ := createDB(testDBDirName + "/_testing")
+						// rlog.Infof("[STARTED INTERNAL - WRITE]")
+						// for i := 0; i < 1000000; i++ {
+						// 	db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
+						// }
+						// rlog.Infof("[STOPPED INTERNAL - WRITE]")
+						// rlog.Infof("[STARTED INTERNAL - READ]")
+						// for i := 0; i < 1000000; i++ {
+						// 	if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
+						// 		closer.Close()
+						// 	}
+						// }
+						// rlog.Infof("[STOPPED INTERNAL - READ]")
 						rlog.Infof("[TESTING EXTERNAL API 1M READS/WRITES]")
 						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3600*time.Second))
 						defer cancel()
 						cs := kv.nh.GetNoOPSession(kv.AppConfig.Cluster.ShardID)
 						rlog.Infof("[STARTED EXTERNAL - WRITE]")
+						values := make([]*KVData, 1000000)
 						for i := 0; i < 1000000; i++ {
-							kvdata, _ := json.Marshal(&KVAction{
-								Data: &KVData{
-									Key: "_test" + strconv.Itoa(i),
-									Val: []byte("_test"),
-								},
-							})
-							kv.nh.SyncPropose(ctx, cs, kvdata)
+							values[i] = &KVData{
+								Key: "_test" + strconv.Itoa(i),
+								Val: []byte("_test"),
+							}
+						}
+						kvs, _ := json.Marshal(&KVBatch{Batch: values})
+						//TODO: Could use Propse but saturates instead
+						if req, err := kv.nh.SyncPropose(ctx, cs, kvs); err != nil {
+							rlog.Errorf("[ERROR] Didn't save %v %v", err, req)
 						}
 						rlog.Infof("[STOPPED EXTERNAL - WRITE]")
 						rlog.Infof("[STARTED EXTERNAL - READ]")

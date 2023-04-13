@@ -28,6 +28,11 @@ type KVData struct {
 	Val []byte
 }
 
+type KVBatch struct {
+	Action string
+	Batch  []*KVData
+}
+
 type KVAction struct {
 	Action string
 	Data   *KVData

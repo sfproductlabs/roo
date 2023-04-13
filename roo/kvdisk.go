@@ -462,6 +462,15 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 	wb := db.db.NewBatch()
 	defer wb.Close()
 	for idx, e := range ents {
+		batchKV := &KVBatch{}
+		if errb := json.Unmarshal(e.Cmd, batchKV); errb == nil && batchKV.Batch != nil {
+			for _, a := range batchKV.Batch {
+				wb.Set([]byte(a.Key), []byte(a.Val), db.wo)
+			}
+			ents[idx].Result = sm.Result{Value: uint64(len(ents[idx].Cmd))}
+			continue
+		}
+
 		actionKV := &KVAction{Data: &KVData{}}
 		erru := json.Unmarshal(e.Cmd, actionKV)
 		if erru != nil || actionKV.Data.Key == "" {
