@@ -160,9 +160,10 @@ func main() {
 
 	////////////////////////////////////////DNS QUERY
 	rlog.Infof("Cluster: Looking up hosts at: %s\n", configuration.Cluster.DNS)
+	tmpHosts := make([]string, 0)
 	if configuration.Cluster.Resolver == "" {
 		rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
-		configuration.Cluster.Service.Hosts, _ = net.LookupHost(configuration.Cluster.DNS)
+		tmpHosts, _ = net.LookupHost(configuration.Cluster.DNS)
 	} else {
 		r := &net.Resolver{
 			PreferGo: false,
@@ -175,10 +176,11 @@ func main() {
 		}
 		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
 		var err error
-		if configuration.Cluster.Service.Hosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
+		if tmpHosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
 			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
 		}
 	}
+	configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, tmpHosts...)
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
 
 	//////////////////////////////////////// MAX CHANNELS

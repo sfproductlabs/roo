@@ -1,0 +1,90 @@
+{
+    "SchemaVersion": 1,
+    "ApiVersion": 1,
+    "Swarm": false,
+    "Test" : false,
+    "SwarmRefreshSeconds": 30,
+    "CheckHostnames" : false,
+    "IgnoreInsecureTLS": true,
+    "ProxyDailyLimit": 0,
+    "ProxyDailyLimitChecker": "memory",
+    "IgnoreProxyOptions" : true,
+    "MaximumConnections": 150000,
+    "ReadTimeoutSeconds": 20,
+    "ReadHeaderTimeoutSeconds": 20,
+    "ScanDockerSwarmSeconds": 30,
+    "WriteTimeoutSeconds": 20,
+    "IdleTimeoutSeconds": 20,
+    "MaxHeaderBytes": 1048576,
+    "AllowOrigin": "*",
+    "DefaultRedirect": "https://sfpl.io",
+    "Debug": true,
+    "AcmeStaging": false,
+    "Cluster": {
+        "StartDelaySeconds": 0,
+        "DNS": "localhost",
+        "Resolver": "192.168.4.1",
+        "ReplicaID": 1,
+        "ShardID": 1,
+        "Binding" : "192.168.4.200",
+        "Service": {
+            "Service": "kv",
+            "Secure": true,
+            "Critical": true,
+            "CACert": "./.setup/keys/rootCa.crt",
+            "Cert": "./.setup/keys/nginx.crt",
+            "Key": "./.setup/keys/nginx.key",
+            "Format": "json",
+            "MessageLimit": 65536,
+            "ByteLimit": 67108864,
+            "Hosts": ["192.168.4.198"]
+        }
+    },
+    "X_Consume": [
+        {
+            "Service": "nats",
+            "Hosts": [
+                "tls://localhost:4222"
+            ],
+            "Secure": true,
+            "Critical": true,
+            "CACert": "./.setup/keys/rootCa.crt",
+            "Cert": "./.setup/keys/nats-client.crt",
+            "Key": "./.setup/keys/nats-client.key",
+            "Format": "json",
+            "MessageLimit": 65536,
+            "ByteLimit": 67108864,
+            "Filter": [
+                {
+                    "Alias": "log",
+                    "Type": "chan",
+                    "Id": "tic.log.>"
+                },
+                {
+                    "Alias": "count",
+                    "Type": "chan",
+                    "Id": "tic.count.>"
+                },
+                {
+                    "Alias": "update",
+                    "Type": "chan",
+                    "Id": "tic.update.>"
+                }
+            ]
+        }
+    ],
+    "X_Notify": [
+        {
+            "Service": "nats",
+            "Hosts": [
+                "tls://localhost:4222"
+            ],
+            "Context": "toc.roo.notify",
+            "Secure": true,
+            "CACert": "./.setup/keys/rootCa.crt",
+            "Cert": "./.setup/keys/nats-client.crt",
+            "Key": "./.setup/keys/nats-client.key",
+            "Format": "json"
+        }
+    ]
+}
