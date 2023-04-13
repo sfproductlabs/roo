@@ -137,6 +137,7 @@ type Configuration struct {
 	ApiVersion               int
 	ApiVersionString         string
 	AcmeStaging              bool
+	Test                     bool
 	Swarm                    bool
 	SwarmRefreshSeconds      int
 	SwarmRole                string

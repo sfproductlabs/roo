@@ -2,6 +2,7 @@
     "SchemaVersion": 1,
     "ApiVersion": 1,
     "Swarm": true,
+    "Test" : true,
     "SwarmRefreshSeconds": 30,
     "CheckHostnames" : true,
     "IgnoreInsecureTLS": true,

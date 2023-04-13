@@ -42,6 +42,18 @@ Roo itself is clustered. Every machine it runs on shares the load to your servic
 docker run sfproductlabs/roo:latest
 ```
 
+### Cluster API Endpoints
+* Write a record to the KV Store - PUT http://localhost:6299/roo/v1/kvs/hop Ex. ```curl -X POST -i http://localhost:6299/roo/v1/kv/hop --data 'scotch'```
+* Get a record from the KV Store - GET http://localhost:6299/roo/v1/kv/hopscotch
+* Search/Scan the KV Store - GET http://localhost:6299/roo/v1/kvs/hop
+* Get the Server Status - GET http://localhost:6299/roo/v1/status
+* Clear the Cluster/Servers - POST http://localhost:6299/roo/v1/rescue
+* Swarm Update - POST http://localhost:6299/roo/v1/swarm
+* Ping - GET http://localhost:6299/roo/v1/ping
+* Join a machine to the swarm - POST http://localhost:6299/roo/v1/join 
+* Remove a machine from the swarm - POST http://localhost:6299/roo/v1/remove 
+* Debug & Profiler Heap - GET http://localhost:6299/debug/pprof/heap
+
 ## Getting Started (complete run-through example on Hetzner Cloud)
 
 ### Setup the physical nodes

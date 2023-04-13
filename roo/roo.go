@@ -367,6 +367,28 @@ func main() {
 
 			} else {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
+				if configuration.Test {
+					go func() {
+						time.Sleep(30 * time.Second)
+						log.Println("[TESTING EXTERNAL API]")
+						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4*time.Second))
+						defer cancel()
+						log.Println("[STARTED EXTERNAL]")
+						for i := 0; i < 1000000; i++ {
+							kv.nh.SyncRead(ctx, kv.AppConfig.Cluster.ShardID, "test")
+						}
+						log.Println("[STOPPED EXTERNAL]")
+						// cs := kv.nh.GetNoOPSession(kv.AppConfig.Cluster.ShardID)
+						// kvdata, _ := json.Marshal(&KVAction{
+						// 	Data: &KVData{
+						// 		Key: "test",
+						// 		Val: []byte("test"),
+						// 	},
+						// })
+						// res, errx := kv.nh.SyncPropose(ctx, cs, kvdata)
+
+					}()
+				}
 			}
 			//SET THE DEFAULT API TO RUN THROUGH THE KV
 			configuration.API = s.Service
