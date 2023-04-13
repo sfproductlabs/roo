@@ -435,6 +435,7 @@ func main() {
 						rlog.Infof("[STOPPED EXTERNAL - WRITE]")
 						rlog.Infof("[STARTED EXTERNAL - READ]")
 						for i := 0; i < 1000000; i++ {
+							//kv.nh.StaleRead(kv.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
 							kv.nh.SyncRead(ctx, kv.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
 						}
 						rlog.Infof("[STOPPED EXTERNAL - READ]")
