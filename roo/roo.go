@@ -370,7 +370,7 @@ func main() {
 				if configuration.Test {
 					go func() {
 						time.Sleep(30 * time.Second)
-						log.Println("[TESTING EXTERNAL API]")
+						log.Println("[TESTING EXTERNAL API 1M READS]")
 						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4*time.Second))
 						defer cancel()
 						log.Println("[STARTED EXTERNAL]")
