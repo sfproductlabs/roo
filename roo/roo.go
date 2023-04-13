@@ -161,25 +161,29 @@ func main() {
 	////////////////////////////////////////DNS QUERY
 	rlog.Infof("Cluster: Looking up hosts at: %s\n", configuration.Cluster.DNS)
 	tmpHosts := make([]string, 0)
-	if configuration.Cluster.Resolver == "" {
-		rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
-		tmpHosts, _ = net.LookupHost(configuration.Cluster.DNS)
-	} else {
-		r := &net.Resolver{
-			PreferGo: false,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{
-					Timeout: time.Millisecond * time.Duration(10000),
-				}
-				return d.DialContext(ctx, "udp", configuration.Cluster.Resolver+":53")
-			},
-		}
-		rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
-		var err error
-		if tmpHosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
-			log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
+	if configuration.Cluster.BootstrapHosts {
+		rlog.Infof("Cluster: Bootstrapping Hosts\n")
+		if configuration.Cluster.Resolver == "" {
+			rlog.Infof("Cluster: DNS Resolver: Using the OS default\n")
+			tmpHosts, _ = net.LookupHost(configuration.Cluster.DNS)
+		} else {
+			r := &net.Resolver{
+				PreferGo: false,
+				Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+					d := net.Dialer{
+						Timeout: time.Millisecond * time.Duration(10000),
+					}
+					return d.DialContext(ctx, "udp", configuration.Cluster.Resolver+":53")
+				},
+			}
+			rlog.Infof("Cluster: DNS Resolver: %s\n", configuration.Cluster.Resolver)
+			var err error
+			if tmpHosts, err = r.LookupHost(context.Background(), configuration.Cluster.DNS); err != nil {
+				log.Fatalf("[CRITICAL] Cluster: DNS Resolver failed %v", err)
+			}
 		}
 	}
+
 	configuration.Cluster.Service.Hosts = append(configuration.Cluster.Service.Hosts, tmpHosts...)
 	rlog.Infof("Cluster: Possible Roo Peer IPs: %s\n", configuration.Cluster.Service.Hosts)
 
@@ -376,7 +380,14 @@ func main() {
 	//////////////////////////////////////// SETUP API - INTERNAL NETWORK PORT :6299 (default) AS NOT EXPOSED
 	//TODO: ADD SSL SUPPORT
 	//rtrm := http.TimeoutHandler(rtr, time.Second*60, "") //Can stack these
-	go http.ListenAndServe(API_PORT, rtr)
+	if configuration.Cluster.Binding != "" {
+		endpoint := configuration.Cluster.Binding + API_PORT
+		rlog.Infof("API: Listening on %s", endpoint)
+		go http.ListenAndServe(endpoint, rtr)
+	} else {
+		rlog.Infof("API: Listening on *ALL* local endpoints")
+		go http.ListenAndServe(API_PORT, rtr)
+	}
 
 	//////////////////////////////////////// LOAD CLUSTER
 	{
@@ -551,7 +562,7 @@ func main() {
 		},
 	}
 	server := &http.Server{ // HTTP REDIR SSL RENEW
-		Addr:              ":https",
+		Addr:              configuration.Cluster.Binding + ":9999",
 		ReadTimeout:       time.Duration(configuration.ReadTimeoutSeconds) * time.Second,
 		ReadHeaderTimeout: time.Duration(configuration.ReadHeaderTimeoutSeconds) * time.Second,
 		WriteTimeout:      time.Duration(configuration.WriteTimeoutSeconds) * time.Second,
@@ -603,7 +614,7 @@ func main() {
 	//////////////////////////////////////// ACTUALLY RUN THE SERVICES
 	//TODO: Wait to start until nh is created from raft cluster
 	//Redirect HTTP->HTTPS
-	go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
+	go http.ListenAndServe(configuration.Cluster.Binding+":http", certManager.HTTPHandler(nil))
 
 	//Start the actual Proxy Service
 	log.Fatal(server.ListenAndServeTLS("", ""))

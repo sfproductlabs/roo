@@ -20,6 +20,7 @@
     "DefaultRedirect": "https://sfpl.io",
     "Debug": false,
     "AcmeStaging": false,
+    "DataDirectoryRoot" : "",
     "Cluster": {
         "StartDelaySeconds": 0,
         "DNS": "localhost",
@@ -27,6 +28,7 @@
         "ReplicaID": 1,
         "ShardID": 1,
         "Binding" : "",
+        "BootstrapHosts": true,
         "Service": {
             "Service": "kv",
             "Secure": true,
@@ -36,7 +38,8 @@
             "Key": "./.setup/keys/nginx.key",
             "Format": "json",
             "MessageLimit": 65536,
-            "ByteLimit": 67108864
+            "ByteLimit": 67108864,
+            "Hosts" : []
         }
     },
     "X_Consume": [

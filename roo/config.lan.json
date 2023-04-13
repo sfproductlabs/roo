@@ -24,9 +24,10 @@
         "StartDelaySeconds": 0,
         "DNS": "localhost",
         "Resolver": "192.168.4.1",
-        "ReplicaID": 2,
-        "ShardID": 2,
+        "ReplicaID": 1,
+        "ShardID": 1,
         "Binding" : "192.168.4.200",
+        "BootstrapHosts": false,
         "Service": {
             "Service": "kv",
             "Secure": true,
@@ -37,7 +38,7 @@
             "Format": "json",
             "MessageLimit": 65536,
             "ByteLimit": 67108864,
-            "Hosts": ["192.168.4.178"]
+            "Hosts": []
         }
     },
     "X_Consume": [

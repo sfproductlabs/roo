@@ -59,7 +59,11 @@ rood ./config.json
 * Ping - GET http://localhost:6299/roo/v1/ping
 * Join a machine to the swarm - POST http://localhost:6299/roo/v1/join 
 * Remove a machine from the swarm - POST http://localhost:6299/roo/v1/remove 
-* Debug & Profiler Heap - GET http://localhost:6299/debug/pprof/heap
+* Debug Cmdline - GET http://localhost:6299/debug/pprof/heap
+* Debug Profile - GET http://localhost:6299/debug/pprof/profile
+* Debug Symbols - GET http://localhost:6299/debug/pprof/symbol
+* Debug Trace - GET http://localhost:6299/debug/pprof/trace
+* Debug Indices - GET http://localhost:6299/debug/pprof/1
 
 ## Getting Started (complete run-through example on Hetzner Cloud)
 

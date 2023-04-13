@@ -62,7 +62,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"syscall"
 	"time"
@@ -106,7 +105,7 @@ func (kvs *KvService) connect() error {
 	}
 
 	//Now exclude IPs from the hosts (ours or other IPv6)
-	tmp := kvs.Configuration.Hosts[:0]
+	tmp := make([]string, 0)
 	for i := 0; i < len(kvs.Configuration.Hosts); i++ {
 		if kvs.Configuration.Hosts[i] != kvs.AppConfig.Cluster.Binding && net.ParseIP(kvs.Configuration.Hosts[i]) != nil && net.ParseIP(kvs.Configuration.Hosts[i]).To4() != nil {
 			tmp = append(tmp, kvs.Configuration.Hosts[i])
@@ -132,8 +131,11 @@ func (kvs *KvService) connect() error {
 		SnapshotEntries:    10,
 		CompactionOverhead: 5,
 	}
+	if kvs.AppConfig.DataDirectoryRoot == "" {
+		kvs.AppConfig.DataDirectoryRoot = "cluster-data"
+	}
 	datadir := filepath.Join(
-		"cluster-data",
+		kvs.AppConfig.DataDirectoryRoot,
 		"roo",
 		fmt.Sprintf("node%d", kvs.AppConfig.Cluster.ReplicaID))
 
@@ -160,8 +162,8 @@ func (kvs *KvService) connect() error {
 		olderThan = 0
 		for _, h := range kvs.Configuration.Hosts {
 			fmt.Println(h)
-			if sort.Search(len(myIPstrings), func(i int) bool { return myIPstrings[i] == h }) > 0 ||
-				h == kvs.AppConfig.Cluster.Binding ||
+			if h == kvs.AppConfig.Cluster.Binding ||
+				//sort.Search(len(myIPstrings), func(i int) bool { return myIPstrings[i] == h }) > 0 ||
 				net.ParseIP(h).To4() == nil {
 				continue
 			}

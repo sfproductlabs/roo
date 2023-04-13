@@ -116,6 +116,7 @@ type Cluster struct {
 	Service           *Service
 	DNS               string
 	Resolver          string
+	BootstrapHosts    bool
 	Binding           string
 	ReplicaID         uint64
 	ShardID           uint64
@@ -141,6 +142,7 @@ type Configuration struct {
 	SchemaVersion            int
 	ApiVersion               int
 	ApiVersionString         string
+	DataDirectoryRoot        string
 	AcmeStaging              bool
 	Test                     bool
 	Swarm                    bool
