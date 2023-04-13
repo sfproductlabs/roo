@@ -68,7 +68,6 @@ import (
 
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
-	"github.com/lni/dragonboat/v4/logger"
 )
 
 // ////////////////////////////////////// C*
@@ -122,10 +121,6 @@ func (kvs *KvService) connect() error {
 		signal.Ignore(syscall.Signal(0xd))
 	}
 
-	logger.GetLogger("raft").SetLevel(logger.ERROR)
-	logger.GetLogger("rsm").SetLevel(logger.WARNING)
-	logger.GetLogger("transport").SetLevel(logger.WARNING)
-	logger.GetLogger("grpc").SetLevel(logger.WARNING)
 	rc := config.Config{
 		ReplicaID:          kvs.AppConfig.Cluster.ReplicaID, //ReplicaID
 		ShardID:            kvs.AppConfig.Cluster.ShardID,   //Group

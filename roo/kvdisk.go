@@ -467,7 +467,7 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 		if erru != nil || actionKV.Data.Key == "" {
 			erru = json.Unmarshal(e.Cmd, actionKV.Data)
 			if erru != nil || actionKV.Data.Key == "" {
-				log.Println("[ERROR] Can't update empty/unknown key %e", erru)
+				log.Print("[ERROR] Can't update empty/unknown key", erru, "\n")
 				panic(erru)
 			}
 		}

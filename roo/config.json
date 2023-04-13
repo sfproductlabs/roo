@@ -2,7 +2,7 @@
     "SchemaVersion": 1,
     "ApiVersion": 1,
     "Swarm": true,
-    "Test" : false,
+    "Test" : true,
     "SwarmRefreshSeconds": 30,
     "CheckHostnames" : true,
     "IgnoreInsecureTLS": true,
@@ -18,7 +18,7 @@
     "MaxHeaderBytes": 1048576,
     "AllowOrigin": "*",
     "DefaultRedirect": "https://sfpl.io",
-    "Debug": true,
+    "Debug": false,
     "AcmeStaging": false,
     "Cluster": {
         "StartDelaySeconds": 0,

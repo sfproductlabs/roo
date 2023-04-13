@@ -53,6 +53,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -62,7 +63,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cockroachdb/pebble"
 	"github.com/gorilla/mux"
+	"github.com/lni/dragonboat/v4/logger"
 	"github.com/patrickmn/go-cache"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -94,6 +97,31 @@ func main() {
 	file.Close()
 	if err != nil {
 		log.Fatalf("[ERROR] Configuration file has errors or file missing %s", err)
+	}
+
+	if !configuration.Debug {
+		logger.GetLogger("logdb").SetLevel(logger.ERROR)
+		logger.GetLogger("raftpb").SetLevel(logger.ERROR)
+		logger.GetLogger("raft").SetLevel(logger.ERROR)
+		logger.GetLogger("rsm").SetLevel(logger.ERROR)
+		logger.GetLogger("transport").SetLevel(logger.ERROR)
+		logger.GetLogger("grpc").SetLevel(logger.ERROR)
+		logger.GetLogger("dragonboat").SetLevel(logger.ERROR)
+		logger.GetLogger("roo").SetLevel(logger.ERROR)
+		logger.GetLogger("config").SetLevel(logger.ERROR)
+		log.SetFlags(0)
+		log.SetOutput(ioutil.Discard)
+	} else {
+		logger.GetLogger("raft").SetLevel(logger.DEBUG)
+		logger.GetLogger("rsm").SetLevel(logger.DEBUG)
+		logger.GetLogger("transport").SetLevel(logger.DEBUG)
+		logger.GetLogger("grpc").SetLevel(logger.DEBUG)
+		logger.GetLogger("dragonboat").SetLevel(logger.DEBUG)
+		logger.GetLogger("roo").SetLevel(logger.DEBUG)
+		logger.GetLogger("config").SetLevel(logger.DEBUG)
+	}
+	if configuration.Debug || configuration.Test {
+		logger.GetLogger("roo").SetLevel(logger.DEBUG)
 	}
 
 	////////////////////////////////////////SECURITY OVERRIDES
@@ -370,14 +398,14 @@ func main() {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
 				if configuration.Test {
 					go func() {
-						log.Println("[TESTING INTERNAL API 1M READS/WRITES]")
+						rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
 						db, _ := createDB(testDBDirName + "/_testing")
-						// log.Println("[STARTED INTERNAL - WRITE]")
-						// for i := 0; i < 1000000; i++ {
-						// 	db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
-						// }
-						// log.Println("[STOPPED INTERNAL - WRITE]")
-						log.Println("[STARTED INTERNAL - READ]")
+						rlog.Infof("[STARTED INTERNAL - WRITE]")
+						for i := 0; i < 1000000; i++ {
+							db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
+						}
+						rlog.Infof("[STOPPED INTERNAL - WRITE]")
+						rlog.Infof("[STARTED INTERNAL - READ]")
 						rand.Seed(time.Now().UnixNano())
 						min := 0
 						max := 999999
@@ -386,31 +414,27 @@ func main() {
 								closer.Close()
 							}
 						}
-						log.Println("[STOPPED INTERNAL - READ]")
-						time.Sleep(30 * time.Second)
-						log.Println("[TESTING EXTERNAL API 1M READS/WRITES]")
-						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(30*time.Second))
+						rlog.Infof("[STOPPED INTERNAL - READ]")
+						rlog.Infof("[TESTING EXTERNAL API 1M READS/WRITES]")
+						ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3600*time.Second))
 						defer cancel()
-						log.Println("[STARTED EXTERNAL - READ]")
-						for i := 0; i < 1000000; i++ {
-							kv.nh.SyncRead(ctx, kv.AppConfig.Cluster.ShardID, "_test")
-						}
-						log.Println("[STOPPED EXTERNAL - READ]")
 						cs := kv.nh.GetNoOPSession(kv.AppConfig.Cluster.ShardID)
-						kvdata, _ := json.Marshal(&KVAction{
-							Data: &KVData{
-								Key: "_test",
-								Val: []byte("_test"),
-							},
-						})
-						log.Println("[STARTED EXTERNAL - WRITE]")
-						if _, err := kv.nh.SyncPropose(ctx, cs, kvdata); err != nil {
-							log.Println("[ERROR WRITING]", err)
-						}
+						rlog.Infof("[STARTED EXTERNAL - WRITE]")
 						for i := 0; i < 1000000; i++ {
+							kvdata, _ := json.Marshal(&KVAction{
+								Data: &KVData{
+									Key: "_test" + strconv.Itoa(i),
+									Val: []byte("_test"),
+								},
+							})
 							kv.nh.SyncPropose(ctx, cs, kvdata)
 						}
-						log.Println("[STOPPED EXTERNAL - WRITE]")
+						rlog.Infof("[STOPPED EXTERNAL - WRITE]")
+						rlog.Infof("[STARTED EXTERNAL - READ]")
+						for i := 0; i < 1000000; i++ {
+							kv.nh.SyncRead(ctx, kv.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
+						}
+						rlog.Infof("[STOPPED EXTERNAL - READ]")
 					}()
 				}
 			}

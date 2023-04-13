@@ -68,7 +68,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 		for {
 			select {
 			case <-ticker.C:
-				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.ShardID)
+				leader, _, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.ShardID)
 				if leader == kvs.AppConfig.Cluster.ReplicaID {
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Second)
 					membership, cerr := kvs.nh.SyncGetShardMembership(ctx, kvs.AppConfig.Cluster.ShardID)

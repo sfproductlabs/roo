@@ -159,7 +159,7 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 					// runtime.ReadMemStats(m)
 					//rlog.Infof("Current Heap %+v", *m)
 				}
-				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.ShardID)
+				leader, _, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.ShardID)
 				if leader == kvs.AppConfig.Cluster.ReplicaID {
 					action := &KVAction{
 						Action: SCAN,
