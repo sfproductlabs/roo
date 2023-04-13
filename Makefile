@@ -13,44 +13,44 @@
 # limitations under the License.
 
 OS := $(shell uname)
-ROCKSDB_MAJOR_VER=5
-ifeq ($(OS),Darwin)
-ROCKSDB_SO_FILE=librocksdb.$(ROCKSDB_MAJOR_VER).dylib
-else ifeq ($(OS),Linux)
-ROCKSDB_SO_FILE=librocksdb.so.$(ROCKSDB_MAJOR_VER)
-else
-$(error OS type $(OS) not supported)
-endif
+# ROCKSDB_MAJOR_VER=5
+# ifeq ($(OS),Darwin)
+# ROCKSDB_SO_FILE=librocksdb.$(ROCKSDB_MAJOR_VER).dylib
+# else ifeq ($(OS),Linux)
+# ROCKSDB_SO_FILE=librocksdb.so.$(ROCKSDB_MAJOR_VER)
+# else
+# $(error OS type $(OS) not supported)
+# endif
 
-ROCKSDB_INC_PATH ?=
-ROCKSDB_LIB_PATH ?=
-# in /usr/local/lib?
-ifeq ($(ROCKSDB_LIB_PATH),)
-ifeq ($(ROCKSDB_INC_PATH),)
-ifneq ($(wildcard /usr/local/lib/$(ROCKSDB_SO_FILE)),)
-ifneq ($(wildcard /usr/local/include/rocksdb/c.h),)
-$(info rocksdb lib found at /usr/local/lib/$(ROCKSDB_SO_FILE))
-ROCKSDB_LIB_PATH=/usr/local/lib
-endif
-endif
-endif
-endif
+# ROCKSDB_INC_PATH ?=
+# ROCKSDB_LIB_PATH ?=
+# # in /usr/local/lib?
+# ifeq ($(ROCKSDB_LIB_PATH),)
+# ifeq ($(ROCKSDB_INC_PATH),)
+# ifneq ($(wildcard /usr/local/lib/$(ROCKSDB_SO_FILE)),)
+# ifneq ($(wildcard /usr/local/include/rocksdb/c.h),)
+# $(info rocksdb lib found at /usr/local/lib/$(ROCKSDB_SO_FILE))
+# ROCKSDB_LIB_PATH=/usr/local/lib
+# endif
+# endif
+# endif
+# endif
 
-ifeq ($(ROCKSDB_LIB_PATH),)
-CDEPS_LDFLAGS=-lrocksdb
-else
-CDEPS_LDFLAGS=-L$(ROCKSDB_LIB_PATH) -lrocksdb
-endif
-ifneq ($(ROCKSDB_INC_PATH),)
-CGO_CXXFLAGS=CGO_CFLAGS="-I$(ROCKSDB_INC_PATH)"
-endif
+# ifeq ($(ROCKSDB_LIB_PATH),)
+# CDEPS_LDFLAGS=-lrocksdb
+# else
+# CDEPS_LDFLAGS=-L$(ROCKSDB_LIB_PATH) -lrocksdb
+# endif
+# ifneq ($(ROCKSDB_INC_PATH),)
+# CGO_CXXFLAGS=CGO_CFLAGS="-I$(ROCKSDB_INC_PATH)"
+# endif
 CGO_LDFLAGS=CGO_LDFLAGS="$(CDEPS_LDFLAGS)"
 GOCMD=$(CGO_LDFLAGS) $(CGO_CXXFLAGS) go build -v -gcflags=all="-N -l"
 
 all: roo
 
 roo:
-	$(GOCMD) -o rood github.com/sfproductlabs/roo/v3/roo
+	$(GOCMD) -o rood github.com/sfproductlabs/roo/v4/roo
 
 clean:
 	@rm -f rood
