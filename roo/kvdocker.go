@@ -155,14 +155,14 @@ func (kvs *KvService) runSwarmWorker() *syncutil.Stopper {
 					// runtime.ReadMemStats(m)
 					//rlog.Infof("Current Heap %+v", *m)
 				}
-				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
-				if leader == kvs.AppConfig.Cluster.NodeID {
+				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.ShardID)
+				if leader == kvs.AppConfig.Cluster.ReplicaID {
 					action := &KVAction{
 						Action: SCAN,
 						Key:    SWARM_MANAGER_PREFIX,
 					}
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(kvs.AppConfig.SwarmRefreshSeconds-1)*time.Second)
-					result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.Group, action)
+					result, err := kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.ShardID, action)
 					cancel()
 					if err == nil {
 						items := result.(map[string][]byte)

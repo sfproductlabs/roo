@@ -68,14 +68,14 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 		for {
 			select {
 			case <-ticker.C:
-				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.Group)
-				if leader == kvs.AppConfig.Cluster.NodeID {
+				leader, _, _ := kvs.nh.GetLeaderID(kvs.AppConfig.Cluster.ShardID)
+				if leader == kvs.AppConfig.Cluster.ReplicaID {
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Second)
-					membership, cerr := kvs.nh.SyncGetClusterMembership(ctx, kvs.AppConfig.Cluster.Group)
+					membership, cerr := kvs.nh.SyncGetShardMembership(ctx, kvs.AppConfig.Cluster.ShardID)
 					ctx.Done()
 					cancel()
 					if cerr == nil {
-						for nodeid, node := range membership.Nodes {
+						for ReplicaID, node := range membership.Nodes {
 							host, _, _ := net.SplitHostPort(node)
 							r, _ := http.NewRequest("GET", "http://"+host+API_PORT+"/roo/"+kvs.AppConfig.ApiVersionString+"/status", nil) //TODO: https
 							client := &http.Client{
@@ -95,10 +95,10 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 								pingCache.Set(host, time.Now().UnixNano(), cache.DefaultExpiration)
 								continue
 							} else {
-								rlog.Infof("[PING] Node host not repsonding %s", host)
+								rlog.Infof("[PING] Replica shard not repsonding %s", host)
 								if pinged, found := pingCache.Get(host); found {
 									if (time.Now().UnixNano() - pinged.(int64)) > int64(BOOTSTRAP_WAIT_S)*10^9 {
-										rs, err := kvs.nh.RequestDeleteNode(kvs.AppConfig.Cluster.Group, nodeid, 0, 10*time.Second)
+										rs, err := kvs.nh.RequestDeleteReplica(kvs.AppConfig.Cluster.ShardID, ReplicaID, 0, 10*time.Second)
 										if err != nil {
 											rlog.Warningf("[WARNING] Failed to prune found node %s: %v, %v", host, rs, err)
 										} else {
@@ -106,7 +106,7 @@ func (kvs *KvService) runRaftWatcher() *syncutil.Stopper {
 										}
 									}
 								} else {
-									rs, err := kvs.nh.RequestDeleteNode(kvs.AppConfig.Cluster.Group, nodeid, 0, 10*time.Second)
+									rs, err := kvs.nh.RequestDeleteReplica(kvs.AppConfig.Cluster.ShardID, ReplicaID, 0, 10*time.Second)
 									if err != nil {
 										rlog.Warningf("[WARNING] Failed to prune missing node %s: %v, %v", host, rs, err)
 									} else {

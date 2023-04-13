@@ -23,7 +23,8 @@
         "StartDelaySeconds": 0,
         "DNS": "localhost",
         "Resolver": "",
-        "Group": 1,
+        "ReplicaID": 1,
+        "ShardID": 1,
         "Binding" : "",
         "Service": {
             "Service": "kv",

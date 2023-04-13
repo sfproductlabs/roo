@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/gocql/gocql"
-	"github.com/lni/dragonboat/v3"
+	"github.com/lni/dragonboat/v4"
 	"github.com/lni/goutils/syncutil"
 	"github.com/nats-io/nats.go"
 	"github.com/patrickmn/go-cache"
 )
 
-////////////////////////////////////////
+// //////////////////////////////////////
 // Get the system setup from the config.json file:
-////////////////////////////////////////
+// //////////////////////////////////////
 type session interface {
 	connect() error                                                      //Connect/open the service session
 	close() error                                                        //Close the service session
@@ -108,8 +108,8 @@ type Cluster struct {
 	DNS               string
 	Resolver          string
 	Binding           string
-	Group             uint64
-	NodeID            uint64
+	ReplicaID         uint64
+	ShardID           uint64
 	StartDelaySeconds int64
 }
 
@@ -173,8 +173,8 @@ type ClusterStatus struct {
 	Client       string
 	Binding      string
 	Conns        int
-	NodeID       uint64
-	Group        uint64
+	ReplicaID    uint64
+	ShardID      uint64
 	Hosts        []string
 	Instantiated int64
 	Started      int64

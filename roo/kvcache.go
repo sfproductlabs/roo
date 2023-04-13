@@ -2,7 +2,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,7 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-//Certificate Cache
+// Certificate Cache
 var CertCache = cache.New(3600*time.Second, 90*time.Second)
 
 // Get reads a certificate data from the specified kv.
@@ -33,7 +33,7 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 	keyname := CACHE_PREFIX + name
 	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
 	defer cancel()
-	result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.Group, keyname)
+	result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, keyname)
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
@@ -51,7 +51,7 @@ func (kvs KvService) Get(ctx context.Context, name string) ([]byte, error) {
 // Put writes the certificate data to the specified kv.
 func (kvs KvService) Put(ctx context.Context, name string, data []byte) error {
 	keyname := CACHE_PREFIX + name
-	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
+	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
 	kv := &KVAction{
 		Key: keyname,
 		Val: data,

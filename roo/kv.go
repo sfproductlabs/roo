@@ -66,13 +66,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lni/dragonboat/v3"
-	"github.com/lni/dragonboat/v3/config"
-	"github.com/lni/dragonboat/v3/logger"
-	rdb "github.com/lni/dragonboat/v3/plugin/rocksdb"
+	"github.com/lni/dragonboat/v4"
+	"github.com/lni/dragonboat/v4/config"
+	"github.com/lni/dragonboat/v4/logger"
 )
 
-//////////////////////////////////////// C*
+// ////////////////////////////////////// C*
 // Connect initiates the primary connection to the range of provided URLs
 func (kvs *KvService) connect() error {
 
@@ -115,8 +114,8 @@ func (kvs *KvService) connect() error {
 	kvs.Configuration.Hosts = tmp
 	rlog.Infof("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
-	//kvs.AppConfig.Cluster.NodeID = uint64(rand.Intn(65534) + 1)
-	kvs.AppConfig.Cluster.NodeID = rand.Uint64()
+	//kvs.AppConfig.Cluster.ReplicaID = uint64(rand.Intn(65534) + 1)
+	kvs.AppConfig.Cluster.ShardID = rand.Uint64()
 
 	// https://github.com/golang/go/issues/17393
 	if runtime.GOOS == "darwin" {
@@ -128,8 +127,8 @@ func (kvs *KvService) connect() error {
 	logger.GetLogger("transport").SetLevel(logger.WARNING)
 	logger.GetLogger("grpc").SetLevel(logger.WARNING)
 	rc := config.Config{
-		NodeID:             kvs.AppConfig.Cluster.NodeID,
-		ClusterID:          kvs.AppConfig.Cluster.Group,
+		ReplicaID:          kvs.AppConfig.Cluster.ReplicaID, //ReplicaID
+		ShardID:            kvs.AppConfig.Cluster.ShardID,   //Group
 		ElectionRTT:        10,
 		HeartbeatRTT:       1,
 		CheckQuorum:        true,
@@ -139,22 +138,20 @@ func (kvs *KvService) connect() error {
 	datadir := filepath.Join(
 		"cluster-data",
 		"roo",
-		fmt.Sprintf("node%d", kvs.AppConfig.Cluster.NodeID))
+		fmt.Sprintf("node%d", kvs.AppConfig.Cluster.ReplicaID))
 
 	nhc := config.NodeHostConfig{
 		WALDir:         datadir,
 		NodeHostDir:    datadir,
 		RTTMillisecond: 200,
 		RaftAddress:    kvs.AppConfig.Cluster.Binding + KV_PORT,
-		LogDBConfig:    config.GetTinyMemLogDBConfig(),
-		LogDBFactory:   rdb.NewLogDB,
 	}
 	nh, err := dragonboat.NewNodeHost(nhc)
 	if err != nil {
 		panic(err)
 	}
 
-	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.NodeID: kvs.AppConfig.Cluster.Binding + KV_PORT}
+	initialMembers := map[uint64]string{kvs.AppConfig.Cluster.ReplicaID: kvs.AppConfig.Cluster.Binding + KV_PORT}
 	olderThan := 0
 	bootstrap := false
 	readyToJoin := false
@@ -208,7 +205,7 @@ func (kvs *KvService) connect() error {
 				if status.Instantiated > kvs.AppConfig.Cluster.Service.Instantiated {
 					olderThan = olderThan + 1
 				}
-				initialMembers[status.NodeID] = status.Binding + KV_PORT
+				initialMembers[status.ReplicaID] = status.Binding + KV_PORT
 				if status.Started > 0 {
 					checkedBootstrapped := 0
 				checkBootstrap:
@@ -227,9 +224,9 @@ func (kvs *KvService) connect() error {
 						rlog.Infof("[[DISCOVERED BOOTSTRAPPED CLUSTER]]")
 						bootstrap = false
 						cs := &ClusterStatus{
-							NodeID:  kvs.AppConfig.Cluster.NodeID,
-							Group:   kvs.AppConfig.Cluster.Group,
-							Binding: kvs.AppConfig.Cluster.Binding,
+							ReplicaID: kvs.AppConfig.Cluster.ReplicaID,
+							ShardID:   kvs.AppConfig.Cluster.ShardID,
+							Binding:   kvs.AppConfig.Cluster.Binding,
 						}
 						if csdata, err := json.Marshal(cs); err != nil {
 							rlog.Infof("Bad request to peer (json) %s, %s : %s", h, cs, err)
@@ -295,7 +292,7 @@ func (kvs *KvService) connect() error {
 
 	//Begin cluster
 rejoin:
-	if err := nh.StartOnDiskCluster(initialMembers, !bootstrap, NewDiskKV, rc); err != nil {
+	if err := nh.StartOnDiskReplica(initialMembers, !bootstrap, NewDiskKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to add cluster, %v, members: %v\n", err, initialMembers)
 		if bootstrap {
 			time.Sleep(time.Duration(1) * time.Second)
@@ -312,7 +309,7 @@ rejoin:
 				action := &KVAction{
 					Action: PUT,
 					Key:    PEER_PREFIX + kvs.AppConfig.Cluster.Binding + NODE_POSTFIX,
-					Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.NodeID, 10)),
+					Val:    []byte(strconv.FormatUint(kvs.AppConfig.Cluster.ReplicaID, 10)),
 				}
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
@@ -359,7 +356,7 @@ rejoin:
 	return nil
 }
 
-//////////////////////////////////////// C*
+// ////////////////////////////////////// C*
 // Close will terminate the session to the backend, returning error if an issue arises
 func (i *KvService) close() error {
 	return fmt.Errorf("[ERROR] KV close not implemented")
@@ -374,7 +371,7 @@ func (i *KvService) auth(s *ServiceArgs) error {
 	return fmt.Errorf("[ERROR] KV auth not implemented")
 }
 
-//////////////////////////////////////// BIDIRECTIONAL COMMS
+// ////////////////////////////////////// BIDIRECTIONAL COMMS
 func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceArgs) error {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(12*time.Second))
 	defer cancel()
@@ -400,7 +397,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 			if err := json.Unmarshal(body, cs); err == nil {
 				var rs *dragonboat.RequestState
 				//check the key first, if identical do nothing
-				nodestring := strconv.FormatUint(cs.NodeID, 10)
+				nodestring := strconv.FormatUint(cs.ReplicaID, 10)
 				action := &KVAction{
 					Action: GET,
 					Key:    PEER_PREFIX + cs.Binding + NODE_POSTFIX,
@@ -409,7 +406,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 					if result != nil && string(result.([]byte)) != nodestring {
 						//if old/duplicate, remove the old worker, then add node
 						if oldnode, err := strconv.ParseUint(string(result.([]byte)), 10, 64); err == nil {
-							rs, err = kvs.nh.RequestDeleteNode(cs.Group, oldnode, 0, 3*time.Second)
+							rs, err = kvs.nh.RequestDeleteReplica(cs.ShardID, oldnode, 0, 3*time.Second)
 							rlog.Infof("[INFO] Pruned node %d: %v, %v", oldnode, cs, err)
 							if err != nil {
 								return err
@@ -417,7 +414,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 						}
 					}
 				}
-				rs, err = kvs.nh.RequestAddNode(cs.Group, cs.NodeID, cs.Binding+KV_PORT, 0, 3*time.Second)
+				rs, err = kvs.nh.RequestAddReplica(cs.ShardID, cs.ReplicaID, cs.Binding+KV_PORT, 0, 3*time.Second)
 				rlog.Infof("[INFO] Node requested to join cluster: %v, errors: %v", cs, err)
 				select {
 				case res := <-rs.CompletedC:
@@ -499,7 +496,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 
 }
 
-//////////////////////////////////////// WRITES REQUIRE NO FEEDBACK AND ARE ULTRA FAST
+// ////////////////////////////////////// WRITES REQUIRE NO FEEDBACK AND ARE ULTRA FAST
 func (kvs *KvService) write(w *WriteArgs) error {
 	err := fmt.Errorf("Could not write to any kv server in cluster")
 	//v := *w.Values
@@ -520,7 +517,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 	defer cancel()
 	switch action.Action {
 	case SCAN:
-		result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.Group, action)
+		result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, action)
 		if err != nil {
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
@@ -529,7 +526,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			return result, nil
 		}
 	case GET:
-		result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.Group, action)
+		result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, action)
 		if err != nil {
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
@@ -538,7 +535,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			return result, nil
 		}
 	case PUT:
-		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.Group)
+		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
 		kvdata, err := json.Marshal(action)
 		if err != nil {
 			rlog.Errorf("[PUT] Execute key: %s, error: %v", action.Key, err)

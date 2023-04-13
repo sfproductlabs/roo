@@ -1,8 +1,8 @@
 package main
 
-import "github.com/lni/dragonboat/v3/logger"
+import "github.com/lni/dragonboat/v4/logger"
 
-//////////////////////////////////////// Constants
+// ////////////////////////////////////// Constants
 const (
 	ENV_ROO_DNS          string = "ROO_DNS"
 	ENV_ROO_RESOLVER     string = "ROO_RESOLVER"
@@ -38,7 +38,7 @@ const (
 	ROLE_POSTFIX  = ":role"
 )
 
-//Service calls
+// Service calls
 const (
 	SERVE_GET_PING    = iota + 1
 	SERVE_GET_KV      = iota

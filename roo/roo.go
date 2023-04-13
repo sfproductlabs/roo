@@ -67,9 +67,9 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-////////////////////////////////////////
+// //////////////////////////////////////
 // Start here
-////////////////////////////////////////
+// //////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
 	fmt.Println("Roo. Version 90")
@@ -202,8 +202,8 @@ func main() {
 			Client:       getIP(r),
 			Binding:      configuration.Cluster.Binding,
 			Conns:        configuration.MaximumConnections - len(connc),
-			NodeID:       configuration.Cluster.NodeID,
-			Group:        configuration.Cluster.Group,
+			ReplicaID:    configuration.Cluster.ReplicaID,
+			ShardID:      configuration.Cluster.ShardID,
 			Hosts:        configuration.Cluster.Service.Hosts,
 			Instantiated: configuration.Cluster.Service.Instantiated,
 			Started:      configuration.Cluster.Service.Started,
@@ -533,9 +533,9 @@ func main() {
 
 }
 
-////////////////////////////////////////
+// //////////////////////////////////////
 // Serve APIs
-////////////////////////////////////////
+// //////////////////////////////////////
 func serveWithArgs(c *Configuration, w *http.ResponseWriter, r *http.Request, args *ServiceArgs) error {
 	if c != nil && c.API != nil && c.API.Session != nil {
 		if err := c.API.Session.serve(w, r, args); err != nil {
@@ -548,9 +548,9 @@ func serveWithArgs(c *Configuration, w *http.ResponseWriter, r *http.Request, ar
 	return nil
 }
 
-////////////////////////////////////////
+// //////////////////////////////////////
 // Check
-////////////////////////////////////////
+// //////////////////////////////////////
 func check(c *Configuration, r *http.Request) error {
 	//Precheck
 	if c.ProxyDailyLimit > 0 && c.ProxyDailyLimitCheck != nil && c.ProxyDailyLimitCheck(getIP(r)) > c.ProxyDailyLimit {
