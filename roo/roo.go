@@ -79,7 +79,7 @@ func main() {
 	fmt.Println("Roo. Version 91")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
-	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
+	fmt.Println("(c) Copyright 2018-2023 SF Product Labs LLC.")
 	fmt.Println("Use of this software is subject to the LICENSE agreement.")
 	fmt.Println("//////////////////////////////////////////////////////////////\n\n ")
 
