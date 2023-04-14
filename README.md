@@ -46,13 +46,13 @@ docker run sfproductlabs/roo:latest
 git mod download
 make
 # update the config if you need
-rood ./config.json
+sudo rood ./config.json
 ```
-* Run a cluster in a minute on docker swarm
+* Run a cluster on docker swarm
 ```sh
 docker swarm init
 docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
-#this notifies that we should put roo on machines/swarm-nodes with this label
+#the following label notifies that we should put a single instnce of roo on machines/swarm-nodes with the label "load_balancer"
 docker node ls -q | xargs docker node update --label-add load_balancer=true
 docker stack deploy -c roo-docker-compose.yml --resolve-image never roo
 ``` 
