@@ -17,6 +17,7 @@ services:
         mode: host
     deploy:
       mode: global
+      # replicas: 3 # need to remove global mode if we want to run replicas
       endpoint_mode: dnsrr
       placement:
         constraints:

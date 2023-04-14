@@ -562,7 +562,7 @@ func main() {
 		},
 	}
 	server := &http.Server{ // HTTP REDIR SSL RENEW
-		Addr:              configuration.Cluster.Binding + ":9999",
+		Addr:              configuration.Cluster.Binding + ":https",
 		ReadTimeout:       time.Duration(configuration.ReadTimeoutSeconds) * time.Second,
 		ReadHeaderTimeout: time.Duration(configuration.ReadHeaderTimeoutSeconds) * time.Second,
 		WriteTimeout:      time.Duration(configuration.WriteTimeoutSeconds) * time.Second,

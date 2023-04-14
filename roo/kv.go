@@ -114,8 +114,8 @@ func (kvs *KvService) connect() error {
 	kvs.Configuration.Hosts = tmp
 	rlog.Infof("Cluster: Connecting to RAFT: %s\n", kvs.Configuration.Hosts)
 
-	//kvs.AppConfig.Cluster.ReplicaID = uint64(rand.Intn(65534) + 1)
-	kvs.AppConfig.Cluster.ShardID = rand.Uint64()
+	kvs.AppConfig.Cluster.ReplicaID = uint64(rand.Intn(65534) + 1)
+	//kvs.AppConfig.Cluster.ShardID = rand.Uint64()
 
 	// https://github.com/golang/go/issues/17393
 	if runtime.GOOS == "darwin" {
@@ -240,7 +240,7 @@ func (kvs *KvService) connect() error {
 								rlog.Infof("Bad request to peer (request) %s, %s : %s", h, cs, err)
 								continue
 							}
-							ctx, cancel := context.WithTimeout(req.Context(), time.Duration(4*time.Second))
+							ctx, cancel := context.WithTimeout(req.Context(), time.Duration(30*time.Second))
 							defer cancel()
 							req = req.WithContext(ctx)
 							resp, err := (&http.Client{}).Do(req)
@@ -252,7 +252,7 @@ func (kvs *KvService) connect() error {
 								readyToJoin = true
 								break
 							}
-							rlog.Warningf("[WARNING] Request to join failed, status-code: %d err: %v", resp.StatusCode, err)
+							rlog.Warningf("[WARNING] Request to join failed, status-code: %d err: %v", resp, err)
 						}
 					} else {
 						if checkedBootstrapped > -1 {

@@ -48,6 +48,30 @@ make
 # update the config if you need
 rood ./config.json
 ```
+* Run a cluster in a minute on docker swarm
+```sh
+docker swarm init
+docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
+#this notifies that we should put roo on machines/swarm-nodes with this label
+docker node ls -q | xargs docker node update --label-add load_balancer=true
+docker stack deploy -c roo-docker-compose.yml roo
+```
+* Lets examine whats going on
+```sh
+# Diagnostic Functions:
+docker stack ls
+docker stack services roo
+docker service inspect roo_roo
+docker stats --no-stream
+docker node ls
+docker node inspect --pretty <NODE_NAME> 
+# or for a single machine cluster
+docker node ls -q | xargs docker node inspect --pretty
+docker service ps roo_roo
+docker service logs roo_roo -f
+echo "docker service rm roo_roo # WARNING WILL REMOVE CLUSTER"
+echo "docker stack rm roo # WARNING WILL REMOVE CLUSTER"
+```
 
 ### Cluster API Endpoints
 * Write a record to the KV Store - PUT http://localhost:6299/roo/v1/kvs/hop Ex. ```curl -X POST -i http://localhost:6299/roo/v1/kv/hop --data 'scotch'```
@@ -411,6 +435,7 @@ curl -X GET http://<result_of_nslookup>:6299/roo/v1/kvs
 * You need to make the swarm redundant with more than one node, the mesh network load balances internally. Make it more than 2 nodes so that the raft cluster doesn't fight over leadership. Odd numbers are great. **(HA & LB)**
 * It may not cost as much as an AWS ELB, but it probably won't saturate either. Yes, I've run into issues where you need to "warm up" the Amazon elastic load balancer before. I wouldn't be surprised if this handled as much traffic without the cost.
 * No need to say this is $$$$ cheap. I'm saving 10x as much as I would be if I used Amazon AWS using this setup. It's nice to give my startups the same tech my enterprise clients get, but they can actually afford. I don't want to share which cloud provider I used as it took 30 days to request 1 extra machine. But it was cheap. Let us all know if you find something better! You can get these benefits too if you look!
+* Add a loopback in macOS ```ifconfig lo0 alias 127.0.0.2```
 
 ## TODO
 * [ ] Add jwt token inspection (optional) as replacement for client ssl auth

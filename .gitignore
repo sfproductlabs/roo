@@ -25,7 +25,7 @@ config.*.json
 .DS_Store
 
 example-data/
-cluster-data/
+cluster-data*/
 .idea
 
 *heap*
