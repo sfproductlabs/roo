@@ -160,3 +160,15 @@ func Contains[T comparable](s []T, e T) bool {
 	}
 	return false
 }
+
+func bitwiseAnd(ba1 []byte, ba2 []byte) bool {
+	if ba1 == nil || ba2 == nil || len(ba1) != len(ba2) {
+		return false
+	}
+	for i := 0; i < len(ba1); i++ {
+		if ba1[i]&ba2[i] > 0 {
+			return true
+		}
+	}
+	return false
+}
