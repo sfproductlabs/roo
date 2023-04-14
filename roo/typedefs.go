@@ -144,7 +144,7 @@ type Configuration struct {
 	ApiVersionString         string
 	DataDirectoryRoot        string
 	AcmeStaging              bool
-	Test                     bool
+	Tests                    []string
 	Swarm                    bool
 	SwarmRefreshSeconds      int
 	SwarmRole                string

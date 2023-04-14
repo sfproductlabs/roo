@@ -383,9 +383,97 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 	defer cancel()
 	r = r.WithContext(ctx)
 	switch s.ServiceType {
-	//TODO
-	// SERVE_POST_REMOVE = iota
-	// SERVE_POST_RESCUE = iota
+	case SERVE_POST_PERM:
+		return fmt.Errorf("not implemented")
+		action := &KVAction{
+			Action: GET,
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+			},
+		}
+		result, err := kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not get key in cluster: %s", err)
+		}
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(result.([]byte))
+		return nil
+	case SERVE_PUT_PERM:
+		return fmt.Errorf("not implemented")
+		action := &KVAction{
+			Action: GET,
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+			},
+		}
+		result, err := kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not get key in cluster: %s", err)
+		}
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(result.([]byte))
+		return nil
+	case SERVE_GET_KV:
+		action := &KVAction{
+			Action: GET,
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+			},
+		}
+		result, err := kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not get key in cluster: %s", err)
+		}
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(result.([]byte))
+		return nil
+	case SERVE_PUT_KV:
+		defer r.Body.Close()
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("Could not read posted value")
+		}
+		action := &KVAction{
+			Action: PUT,
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+				Val: data,
+			},
+		}
+		_, err = kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not write key to cluster: %s", err)
+		}
+
+		json, _ := json.Marshal(map[string]interface{}{"ok": true})
+		(*w).Header().Set("Content-Type", "application/json")
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(json)
+		return nil
+	case SERVE_GET_KVS:
+		action := &KVAction{
+			Action: SCAN,
+			Data: &KVData{
+				Key: (*s.Values)["key"],
+			},
+		}
+		if len(action.Data.Key) > 0 && action.Data.Key[0] == '/' {
+			action.Data.Key = action.Data.Key[1:]
+		}
+		result, err := kvs.execute(r.Context(), action)
+		if err != nil {
+			return fmt.Errorf("Could not scan cluster: %s", err)
+		}
+		json, _ := json.Marshal(map[string]interface{}{"results": result, "query": action.Data.Key}) //Use in javacript: window.atob to decode base64 into json/string if you saved it as that
+		(*w).Header().Set("Content-Type", "application/json")
+		(*w).WriteHeader(http.StatusOK)
+		(*w).Write(json)
+		return nil
+		//TODO
+	case SERVE_POST_REMOVE:
+		return fmt.Errorf("Remove not implemented")
+	case SERVE_POST_RESCUE:
+		return fmt.Errorf("Rescue not implemented")
 	case SERVE_POST_SWARM:
 		if err := kvs.updateFromSwarm(false); err != nil {
 			return err
@@ -450,62 +538,6 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		} else {
 			return fmt.Errorf("Bad request (body)")
 		}
-	case SERVE_GET_KV:
-		action := &KVAction{
-			Action: GET,
-			Data: &KVData{
-				Key: (*s.Values)["key"],
-			},
-		}
-		result, err := kvs.execute(r.Context(), action)
-		if err != nil {
-			return fmt.Errorf("Could not get key in cluster: %s", err)
-		}
-		(*w).WriteHeader(http.StatusOK)
-		(*w).Write(result.([]byte))
-		return nil
-	case SERVE_GET_KVS:
-		action := &KVAction{
-			Action: SCAN,
-			Data: &KVData{
-				Key: (*s.Values)["key"],
-			},
-		}
-		if len(action.Data.Key) > 0 && action.Data.Key[0] == '/' {
-			action.Data.Key = action.Data.Key[1:]
-		}
-		result, err := kvs.execute(r.Context(), action)
-		if err != nil {
-			return fmt.Errorf("Could not scan cluster: %s", err)
-		}
-		json, _ := json.Marshal(map[string]interface{}{"results": result, "query": action.Data.Key}) //Use in javacript: window.atob to decode base64 into json/string if you saved it as that
-		(*w).Header().Set("Content-Type", "application/json")
-		(*w).WriteHeader(http.StatusOK)
-		(*w).Write(json)
-		return nil
-	case SERVE_PUT_KV:
-		defer r.Body.Close()
-		data, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return fmt.Errorf("Could not read posted value")
-		}
-		action := &KVAction{
-			Action: PUT,
-			Data: &KVData{
-				Key: (*s.Values)["key"],
-				Val: data,
-			},
-		}
-		_, err = kvs.execute(r.Context(), action)
-		if err != nil {
-			return fmt.Errorf("Could not write key to cluster: %s", err)
-		}
-
-		json, _ := json.Marshal(map[string]interface{}{"ok": true})
-		(*w).Header().Set("Content-Type", "application/json")
-		(*w).WriteHeader(http.StatusOK)
-		(*w).Write(json)
-		return nil
 	default:
 		return fmt.Errorf("[ERROR] KV service not implemented %d", s.ServiceType)
 	}

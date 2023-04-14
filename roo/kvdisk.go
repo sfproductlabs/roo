@@ -465,7 +465,11 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 		batchKV := &KVBatch{}
 		if errb := json.Unmarshal(e.Cmd, batchKV); errb == nil && batchKV.Batch != nil {
 			for _, a := range batchKV.Batch {
-				wb.Set([]byte(a.Key), []byte(a.Val), db.wo)
+				if a.Val == nil {
+					wb.Delete([]byte(a.Key), db.wo)
+				} else {
+					wb.Set([]byte(a.Key), []byte(a.Val), db.wo)
+				}
 			}
 			ents[idx].Result = sm.Result{Value: uint64(len(ents[idx].Cmd))}
 			continue
@@ -477,10 +481,14 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 			erru = json.Unmarshal(e.Cmd, actionKV.Data)
 			if erru != nil || actionKV.Data.Key == "" {
 				log.Print("[ERROR] Can't update empty/unknown key", erru, "\n")
-				panic(erru)
+				return nil, erru
 			}
 		}
-		wb.Set([]byte(actionKV.Data.Key), []byte(actionKV.Data.Val), db.wo)
+		if actionKV.Data.Val == nil {
+			wb.Delete([]byte(actionKV.Data.Key), db.wo)
+		} else {
+			wb.Set([]byte(actionKV.Data.Key), []byte(actionKV.Data.Val), db.wo)
+		}
 		ents[idx].Result = sm.Result{Value: uint64(len(ents[idx].Cmd))}
 	}
 	// save the applied index to the DB.

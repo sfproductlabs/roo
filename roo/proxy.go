@@ -80,6 +80,7 @@ func Proxy(writer *http.ResponseWriter, r *http.Request, configuration *Configur
 			Director:   director,
 			BufferPool: configuration.ProxySharedBufferPool,
 			Transport:  customTransport,
+			//FlushInterval: May require for Websockets,
 		}
 		configuration.Proxies[requestKey] = RooProxy{
 			Proxy: proxy,

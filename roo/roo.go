@@ -120,7 +120,7 @@ func main() {
 		logger.GetLogger("roo").SetLevel(logger.DEBUG)
 		logger.GetLogger("config").SetLevel(logger.DEBUG)
 	}
-	if configuration.Debug || configuration.Test {
+	if configuration.Debug || len(configuration.Tests) > 0 {
 		logger.GetLogger("roo").SetLevel(logger.DEBUG)
 	}
 
@@ -369,6 +369,47 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	}).Methods("PUT")
+
+	//////////////////////////////////////// PUT PERM
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm/{key}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_PUT_PERM,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("PUT")
+	//////////////////////////////////////// CHECK PERM
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm/{key}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_POST_PERM,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("POST")
 	//////////////////////////////////////// UPDATE SWARM
 	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/swarm", func(w http.ResponseWriter, r *http.Request) {
 		if err := serveWithArgs(&configuration, &w, r, &ServiceArgs{ServiceType: SERVE_POST_SWARM}); err != nil {
@@ -400,6 +441,14 @@ func main() {
 				AppConfig:     &configuration,
 			}
 			err = kv.connect()
+			go func() {
+				for {
+					time.Sleep(time.Duration(30 * time.Second))
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(60*time.Second))
+					defer cancel()
+					kv.prune(ctx)
+				}
+			}()
 			if err != nil || s.Service.Session == nil {
 				if s.Service.Critical {
 					log.Fatalf("[CRITICAL] Could not connect to RAFT Cluster. %s\n", err)
@@ -409,7 +458,7 @@ func main() {
 
 			} else {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
-				if configuration.Test {
+				if Contains(configuration.Tests, "kv") {
 					go func() {
 						time.Sleep(time.Duration(8 * time.Second))
 						rand.Seed(time.Now().UnixNano())

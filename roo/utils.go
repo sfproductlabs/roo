@@ -57,9 +57,9 @@ import (
 	"strings"
 )
 
-////////////////////////////////////////
+// //////////////////////////////////////
 // hash
-////////////////////////////////////////
+// //////////////////////////////////////
 func hash(s string) uint32 {
 	h := fnv.New32a()
 	h.Write([]byte(s))
@@ -150,4 +150,13 @@ func getIPsString(ipbs []net.IP) []string {
 		ips = append(ips, ip.String())
 	}
 	return ips
+}
+
+func Contains[T comparable](s []T, e T) bool {
+	for _, v := range s {
+		if v == e {
+			return true
+		}
+	}
+	return false
 }

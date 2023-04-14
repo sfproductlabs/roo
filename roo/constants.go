@@ -48,6 +48,8 @@ const (
 	SERVE_POST_SWARM  = iota
 	SERVE_POST_REMOVE = iota
 	SERVE_POST_RESCUE = iota
+	SERVE_POST_PERM   = iota
+	SERVE_PUT_PERM    = iota
 )
 
 var (
