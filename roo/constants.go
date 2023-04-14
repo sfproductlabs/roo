@@ -57,14 +57,15 @@ var (
 )
 
 const (
-	PUT    string = "PUT"
-	GET    string = "GET"
-	DELETE string = "DELETE"
-	UPDATE string = "UPDATE"
-	SCAN   string = "SCAN"
-	JOIN   string = "JOIN"
-	LEAVE  string = "LEAVE"
-	RESCUE string = "RESCUE"
+	PUT          string = "PUT"
+	GET          string = "GET"
+	DELETE       string = "DELETE"
+	UPDATE       string = "UPDATE"
+	SCAN         string = "SCAN"
+	REVERSE_SCAN string = "REVERSE"
+	JOIN         string = "JOIN"
+	LEAVE        string = "LEAVE"
+	RESCUE       string = "RESCUE"
 )
 
 const (

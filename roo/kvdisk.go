@@ -403,6 +403,8 @@ func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
 	switch actionKV.Action {
 	case SCAN:
 		return d.Scan(actionKV.Data.Key)
+	case REVERSE_SCAN:
+		return d.ReverseScan(actionKV.Data.Key)
 	default:
 		return d.Get(actionKV.Data.Key)
 	}
@@ -443,6 +445,22 @@ func (d *DiskKV) Scan(key string) (map[string][]byte, error) {
 		return v, err
 	}
 	return nil, errors.New("db closed")
+}
+func (d *DiskKV) ReverseScan(key string) (map[string][]byte, error) {
+	db := (*pebbledb)(atomic.LoadPointer(&d.db))
+	values := make(map[string][]byte, 0)
+	if db != nil {
+		iter := db.db.NewIter(&pebble.IterOptions{
+			LowerBound: []byte{},
+			UpperBound: []byte(key),
+		})
+		defer iter.Close()
+		for iter.First(); iteratorIsValid(iter); iter.Next() {
+			values[string(iter.Key())] = iter.Value()
+		}
+		return values, nil
+	}
+	return nil, fmt.Errorf("Could not connect to db")
 }
 
 // Update updates the state machine. In this example, all updates are put into

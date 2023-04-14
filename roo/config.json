@@ -23,6 +23,7 @@
     "PermissionCheckExact" : false,
     "AcmeStaging": false,
     "DataDirectoryRoot" : "",
+    "CacheSeconds": 86400,
     "Cluster": {
         "StartDelaySeconds": 0,
         "DNS": "localhost",

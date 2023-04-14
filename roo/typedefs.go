@@ -173,6 +173,7 @@ type Configuration struct {
 	IsUrlFiltered            bool
 	MaximumConnections       int
 	ReadTimeoutSeconds       int
+	CacheSeconds             int
 	ReadHeaderTimeoutSeconds int
 	WriteTimeoutSeconds      int
 	IdleTimeoutSeconds       int

@@ -125,11 +125,14 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 	// Successful Resource-Depth/Entity pair
 	// /org/workspace/folder1/github_committers
 
+	//TODO - much more rigorous testing is needed
+	//Perhaps org name is a priority (maybe match chars to path,entity and resource first)
+	//Maybe some instance we leave user til end (not first)
 	parts := strings.Split(request.Resource.Val, "/")
 	path := ""
 	for _, part := range parts {
-		path = "/" + part
-		if kvs.checkPermission(ctx, getPermissionString(
+		path = "/" + part //TODO: We assume minimum of a root object
+		pString := getPermissionString(
 			&request.User,
 			&TypedString{
 				Val:  path,
@@ -138,7 +141,8 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 			&request.Action,
 			&request.Right,
 			false,
-		)) {
+		)
+		if kvs.checkPermission(ctx, pString) {
 			rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
 			return true
 		}
@@ -146,7 +150,7 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 			if e.Val == request.User.Val {
 				continue
 			}
-			if kvs.checkPermission(ctx, getPermissionString(
+			pString = getPermissionString(
 				&e,
 				&TypedString{
 					Val:  path,
@@ -155,7 +159,8 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 				&request.Action,
 				&request.Right,
 				false,
-			)) {
+			)
+			if kvs.checkPermission(ctx, pString) {
 				rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
 				return true
 			}
@@ -169,6 +174,7 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 // (p) permission (e) entity user/group (c) entity context, resource, ex. folder, integration, organization-unit
 // KEY: p:{e}:sourcetable_users:{c}:/org/folder1 VALUE: 00000000101010101010 (ex. edit, comment)
 // KEY: p:{e}:sourcetable_users:{c}:/org/folder1:{a}:push_prs, VALUE: 1 (RESERVED - IS ACTION SPECIAL TYPE)
+// NOTE: DO NOT USE NAMES IN CASE THEY ARE RENAMED, USE IDS
 func (kvs *KvService) permiss(ctx context.Context, permissions []Permisson) error {
 	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
 	defer cancel()
@@ -176,7 +182,7 @@ func (kvs *KvService) permiss(ctx context.Context, permissions []Permisson) erro
 	//Convert permissions to a batch then write
 	for i := 0; i < len(permissions); i++ {
 		var v []byte
-		k := fmt.Sprintf("p:e:%s:%c:%s",
+		k := fmt.Sprintf("p:e:%s:%c:%s", //NOTE: We force all users/groups to be a union of both and unique
 			permissions[i].Entity.Val,
 			permissions[i].Context.Rune,
 			permissions[i].Context.Val,
@@ -204,9 +210,109 @@ func (kvs *KvService) permiss(ctx context.Context, permissions []Permisson) erro
 		return err
 	}
 	return nil
+
 }
 
-func (kvs *KvService) prune(ctx context.Context) (interface{}, error) {
-	//TODO Prune cache
-	return nil, fmt.Errorf("Method not implemented (prune)")
+func getCacheKey(request *Request) string {
+	k := fmt.Sprintf("c:%s:%s",
+		request.User.Val,
+		request.Resource.Val,
+	)
+	if len(request.Action.Val) > 0 {
+		k = k + fmt.Sprintf(":%c:%s", request.Action.Rune, request.Action.Val)
+	} else {
+		k = k + fmt.Sprintf(":%s", request.Right)
+	}
+	return k
+}
+
+// Cache
+// KEY: {user}:{resource}, VALUE: {entity}:{context}
+// Example requestedby:requestedresource:requestedprivilege
+// Example c:dpachla:/org/folder1/folder2/wb/wbid1234/pivot/pivotid13455:{write|01010101} , e:sourcetable_users:{c}:/org
+func (kvs *KvService) cache(ctx context.Context, request *Request, successfulEntity *TypedString, successfulContext *TypedString) error {
+	if kvs.AppConfig.CacheSeconds <= 1 {
+		return nil
+	}
+	//First add cache, item then add expiry
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
+
+	k := getCacheKey(request)
+
+	v := fmt.Sprintf("e:%s:%c:%s", //Note default classification of all users & groups as entity "e"
+		successfulEntity.Val,
+		successfulContext.Rune,
+		successfulContext.Val,
+	)
+
+	if kv, err := json.Marshal(&KVData{Key: k, Val: []byte(v)}); err != nil {
+		return err
+	} else {
+		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
+		if _, err := kvs.nh.SyncPropose(cctx, cs, kv); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func (kvs *KvService) ttl(ctx context.Context, key string) error {
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
+
+	k := fmt.Sprintf("ttl:%015d:%s",
+		time.Now().Unix()+int64(kvs.AppConfig.CacheSeconds),
+		randString(12),
+	)
+
+	if kv, err := json.Marshal(&KVData{Key: k, Val: []byte(key)}); err != nil {
+		return err
+	} else {
+		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
+		if _, err := kvs.nh.SyncPropose(cctx, cs, kv); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+// Check the cache, use if found
+func (kvs *KvService) hit(ctx context.Context, request *Request) string {
+	//First add cache, item then add expiry
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
+	k := getCacheKey(request)
+	result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, k)
+	if result == nil {
+		return "" //MISS!
+	} else if err != nil {
+		return "" //MISS!
+	}
+	if bytes, ok := result.([]byte); ok && len(bytes) > 0 {
+		return fmt.Sprintf("%s", bytes)
+	}
+	return "" //MISS!
+}
+
+func (kvs *KvService) prune(ctx context.Context) error {
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	defer cancel()
+
+	k := fmt.Sprintf("ttl:%015d",
+		time.Now().Unix(),
+	)
+
+	if kv, err := json.Marshal(&KVAction{Action: SCAN, Data: &KVData{Key: k}}); err != nil {
+		return err
+	} else {
+		if _, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, kv); err != nil {
+			return err
+		}
+
+	}
+	return nil
 }

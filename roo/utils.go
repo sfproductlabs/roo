@@ -52,6 +52,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"hash/fnv"
+	"math/rand"
 	"net"
 	"net/http"
 	"strings"
@@ -186,4 +187,14 @@ func bitwiseGreaterOrEqual(gte []byte, ste []byte) bool {
 		}
 	}
 	return false
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+func randString(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
