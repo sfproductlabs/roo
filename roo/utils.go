@@ -172,3 +172,18 @@ func bitwiseAnd(ba1 []byte, ba2 []byte) bool {
 	}
 	return false
 }
+
+func bitwiseGreaterOrEqual(gte []byte, ste []byte) bool {
+	if gte == nil || ste == nil || len(gte) != len(ste) {
+		return false
+	}
+	for i := len(gte) - 1; i > -1; i-- {
+		if gte[i] >= ste[i] {
+			return true
+		}
+		if ste[i] > 0 {
+			return false
+		}
+	}
+	return false
+}

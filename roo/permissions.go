@@ -101,15 +101,16 @@ func (kvs *KvService) checkPermission(ctx context.Context, kv *KVData) bool {
 	if bytes, ok := result.([]byte); ok {
 		if len(bytes) == 0 {
 			return false
-		} else if len(bytes) == 1 {
-			if bytes[0]&1 > 0 || bytes[0]&kv.Val[0] > 0 {
-				return true
-			} else {
-				return false
-			}
+		} else if len(bytes) == 1 && bytes[0]&1 > 0 {
+			//Action matches
+			return true
 		} else {
 			//Check every byte
-			return bitwiseAnd(bytes, kv.Val)
+			if kvs.AppConfig.PermissonCheckExact {
+				return bitwiseAnd(bytes, kv.Val)
+			} else {
+				return bitwiseGreaterOrEqual(kv.Val, bytes)
+			}
 		}
 	} else {
 		return false

@@ -158,6 +158,7 @@ type Configuration struct {
 	IgnoreInsecureTLS        bool
 	ProxyUrlFilter           string
 	IgnoreProxyOptions       bool
+	PermissonCheckExact      bool
 	ProxyForceJson           bool
 	ProxyDailyLimit          uint64
 	ProxyDailyLimitChecker   string //Service, Ex. casssandra
