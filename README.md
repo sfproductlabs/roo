@@ -54,9 +54,9 @@ docker swarm init
 docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
 #this notifies that we should put roo on machines/swarm-nodes with this label
 docker node ls -q | xargs docker node update --label-add load_balancer=true
-docker stack deploy -c roo-docker-compose.yml roo
-```
-* Lets examine whats going on
+docker stack deploy -c roo-docker-compose.yml --resolve-image never roo
+``` 
+* Lets examine whats going on in docker swarm
 ```sh
 # Diagnostic Functions:
 docker stack ls
