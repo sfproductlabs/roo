@@ -48,6 +48,8 @@ RUN bash -c 'echo "net.core.somaxconn = 8192" >> /etc/sysctl.conf' \
 WORKDIR /app/roo
 ADD . /app/roo
 RUN bash -c 'rm /app/roo/rood || exit 0'
+RUN bash -c 'rm -rf /app/roo/cluster-data || exit 0'
+RUN bash -c 'rm -rf /app/roo/roo/cluster-data || exit 0'
 RUN bash -c 'make'
 # update the config if you need
 RUN bash -c 'rm /app/roo/temp.config.json || exit 0'
