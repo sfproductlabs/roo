@@ -117,7 +117,7 @@ func (kvs *KvService) checkPermission(ctx context.Context, kv *KVData) bool {
 	}
 }
 
-func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
+func (kvs *KvService) authorize(ctx context.Context, request *Request) (bool, error) {
 	//TODO: Clean/Validate/Lowercase/Remove ":" from request
 
 	//First try the cache
@@ -155,7 +155,7 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 				}) {
 					//TODO: Maybe cache the cache
 					rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
-					return true
+					return true, nil
 				}
 			}
 
@@ -186,7 +186,7 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 				Val:  path,
 			})
 			rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
-			return true
+			return true, nil
 		}
 		for _, e := range request.Entities {
 			if e.Val == request.User.Val {
@@ -208,12 +208,12 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 					Val:  path,
 				})
 				rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
-				return true
+				return true, nil
 			}
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // Examples

@@ -384,34 +384,35 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 	r = r.WithContext(ctx)
 	switch s.ServiceType {
 	case SERVE_POST_PERM:
-		return fmt.Errorf("not implemented")
-		action := &KVAction{
-			Action: GET,
-			Data: &KVData{
-				Key: (*s.Values)["key"],
-			},
+		if data, err := ioutil.ReadAll(r.Body); err != nil {
+			return fmt.Errorf("Could not parse body: %s", err)
+		} else {
+			pRequest := &Request{}
+			if err := json.Unmarshal(data, &pRequest); err != nil {
+				return fmt.Errorf("Could not parse object: %s", err)
+			}
+			if ok, err := kvs.authorize(r.Context(), *&pRequest); err != nil {
+				return fmt.Errorf("Could not authorize: %s", err)
+			} else if ok {
+				(*w).WriteHeader(http.StatusOK)
+			} else {
+				(*w).WriteHeader(http.StatusForbidden)
+			}
 		}
-		result, err := kvs.execute(r.Context(), action)
-		if err != nil {
-			return fmt.Errorf("Could not get key in cluster: %s", err)
-		}
-		(*w).WriteHeader(http.StatusOK)
-		(*w).Write(result.([]byte))
 		return nil
 	case SERVE_PUT_PERM:
-		return fmt.Errorf("not implemented")
-		action := &KVAction{
-			Action: GET,
-			Data: &KVData{
-				Key: (*s.Values)["key"],
-			},
-		}
-		result, err := kvs.execute(r.Context(), action)
-		if err != nil {
-			return fmt.Errorf("Could not get key in cluster: %s", err)
+		if data, err := ioutil.ReadAll(r.Body); err != nil {
+			return fmt.Errorf("Could not parse body: %s", err)
+		} else {
+			perms := &[]Permisson{}
+			if err := json.Unmarshal(data, &perms); err != nil {
+				return fmt.Errorf("Could not parse object: %s", err)
+			}
+			if err := kvs.permiss(r.Context(), *perms); err != nil {
+				return fmt.Errorf("Could not set permission: %s", err)
+			}
 		}
 		(*w).WriteHeader(http.StatusOK)
-		(*w).Write(result.([]byte))
 		return nil
 	case SERVE_GET_KV:
 		action := &KVAction{
