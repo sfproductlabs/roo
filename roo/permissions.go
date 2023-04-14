@@ -9,7 +9,8 @@ import (
 
 // RIGHT
 const (
-	LIST           = 1 << iota //Ex. see file in folder
+	ACTION         = 1 << iota //Reserved bit for action (not a bitwise)
+	LIST                       //Ex. see file in folder
 	OPEN                       //Open the document & see properties
 	COMMENT                    //Comment in sidebar
 	APPEND                     //Non destructive changes
@@ -48,9 +49,9 @@ type Permisson struct {
 }
 
 type Request struct {
-	User     TypedString
+	User     TypedString   //me
 	Entities []TypedString //resources I'm in
-	Resource TypedString   //resource requested
+	Resource TypedString   //resource requested (slug)
 	Action   TypedString   //an action not covered in the rights above
 	//ACTION TAKES PRECEDENCE,
 	//Right is IGNORED if exists.
@@ -70,7 +71,8 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) (interfac
 	// /org/workspace/folder1/github_committers
 
 	_, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, request.Action)
-
+	// Resource: /org/folder1/folder2/wb/wbid1234/pivot/pivotid13455
+	// Action: read
 	if err != nil {
 		rlog.Errorf("SyncRead returned error %v\n", err)
 		return nil, err
