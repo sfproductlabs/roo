@@ -76,7 +76,7 @@ import (
 // //////////////////////////////////////
 func main() {
 	fmt.Println("\n\n//////////////////////////////////////////////////////////////")
-	fmt.Println("Roo. Version 90")
+	fmt.Println("Roo. Version 91")
 	fmt.Println("Transparent proxy suitable for clusters and swarm")
 	fmt.Println("https://github.com/sfproductlabs/roo")
 	fmt.Println("(c) Copyright 2018 SF Product Labs LLC.")
@@ -107,7 +107,7 @@ func main() {
 		logger.GetLogger("transport").SetLevel(logger.ERROR)
 		logger.GetLogger("grpc").SetLevel(logger.ERROR)
 		logger.GetLogger("dragonboat").SetLevel(logger.ERROR)
-		logger.GetLogger("roo").SetLevel(logger.ERROR)
+		logger.GetLogger("roo").SetLevel(logger.INFO)
 		logger.GetLogger("config").SetLevel(logger.ERROR)
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)

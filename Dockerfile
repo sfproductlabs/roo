@@ -3,7 +3,7 @@
 # Build with: sudo docker build -t roo .
 ####################################################################################
 
-FROM debian:latest
+FROM golang:latest
 EXPOSE 6299 6300 443 80
 
 # update packages and install required ones
@@ -17,6 +17,7 @@ RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
   librocksdb-dev \
   ca-certificates \
   valgrind \
+  build-essential \
   && apt autoclean -y \
   && apt autoremove -y \
   && rm -rf /var/lib/apt/lists/* 
@@ -46,6 +47,9 @@ RUN bash -c 'echo "net.core.somaxconn = 8192" >> /etc/sysctl.conf' \
 
 WORKDIR /app/roo
 ADD . /app/roo
+RUN bash -c 'rm /app/roo/rood || exit 0'
+RUN bash -c 'make'
+# update the config if you need
 RUN bash -c 'rm /app/roo/temp.config.json || exit 0'
 
 ####################################################################################

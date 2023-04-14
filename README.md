@@ -48,7 +48,7 @@ make
 # update the config if you need
 sudo rood ./config.json
 ```
-* Run a cluster on docker swarm
+* Run a cluster on docker swarm (trivial example)
 ```sh
 docker swarm init
 docker network create -d overlay --attachable forenet --subnet 192.168.9.0/24
