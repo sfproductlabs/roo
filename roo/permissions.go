@@ -84,7 +84,7 @@ func getPermissionString(entity *TypedString, context *TypedString, action *Type
 	if delete {
 		kv.Val = nil
 	}
-	fmt.Println(kv)
+	fmt.Println("PERMISSION CHECK", kv)
 	return kv
 }
 
@@ -118,12 +118,50 @@ func (kvs *KvService) checkPermission(ctx context.Context, kv *KVData) bool {
 }
 
 func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
-	//TODO
-	//Cache example
-	// USER ONLY KEY
-	// dpachla:/org/folder1/folder2/wb/wbid1234/pivot/pivotid13455/write
-	// Successful Resource-Depth/Entity pair
-	// /org/workspace/folder1/github_committers
+	//TODO: Clean/Validate/Lowercase/Remove ":" from request
+
+	//First try the cache
+	//Returns {entity_type_char}:{entity}:{context_type_char}:{context}
+	c := kvs.hit(ctx, request)
+	if len(c) > 0 {
+		//URGENT: First check we are still the/member of entity
+		found := false
+		prevContext := strings.Split(c, ":")
+		if len(prevContext) == 4 {
+			//WARNING: ASSUMING MEMBER/GROUP HAS A UNIQUE KEY ACROSS BOTH
+			if prevContext[1] == request.User.Val {
+				found = true
+			} else {
+				for _, e := range request.Entities {
+					if prevContext[1] == e.Val {
+						found = true
+					}
+				}
+			}
+			if found {
+				var v []byte
+				k := fmt.Sprintf("p:%s",
+					c,
+				)
+				if len(request.Action.Val) > 0 {
+					k = k + fmt.Sprintf(":%c:%s", request.Action.Rune, request.Action.Val)
+					v = []byte{1}
+				} else {
+					v = request.Right
+				}
+				if kvs.checkPermission(ctx, &KVData{
+					Key: k,
+					Val: v,
+				}) {
+					//TODO: Maybe cache the cache
+					rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
+					return true
+				}
+			}
+
+		}
+
+	}
 
 	//TODO - much more rigorous testing is needed
 	//Perhaps org name is a priority (maybe match chars to path,entity and resource first)
@@ -143,6 +181,10 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 			false,
 		)
 		if kvs.checkPermission(ctx, pString) {
+			kvs.cache(ctx, request, &request.User, &TypedString{
+				Rune: request.Resource.Rune,
+				Val:  path,
+			})
 			rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
 			return true
 		}
@@ -161,6 +203,10 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) bool {
 				false,
 			)
 			if kvs.checkPermission(ctx, pString) {
+				kvs.cache(ctx, request, &e, &TypedString{
+					Rune: request.Resource.Rune,
+					Val:  path,
+				})
 				rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
 				return true
 			}
@@ -259,6 +305,7 @@ func (kvs *KvService) cache(ctx context.Context, request *Request, successfulEnt
 	return nil
 }
 
+// Add keys for expiry for cleaning out
 func (kvs *KvService) ttl(ctx context.Context, key string) error {
 	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
 	defer cancel()
@@ -281,8 +328,8 @@ func (kvs *KvService) ttl(ctx context.Context, key string) error {
 }
 
 // Check the cache, use if found
+// Returns {entity_type_char}:{entity}:{context_type_char}:{context}
 func (kvs *KvService) hit(ctx context.Context, request *Request) string {
-	//First add cache, item then add expiry
 	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
 	defer cancel()
 	k := getCacheKey(request)
@@ -298,19 +345,45 @@ func (kvs *KvService) hit(ctx context.Context, request *Request) string {
 	return "" //MISS!
 }
 
+// Clear out the cache
 func (kvs *KvService) prune(ctx context.Context) error {
-	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(30*time.Second))
 	defer cancel()
 
 	k := fmt.Sprintf("ttl:%015d",
 		time.Now().Unix(),
 	)
 
-	if kv, err := json.Marshal(&KVAction{Action: SCAN, Data: &KVData{Key: k}}); err != nil {
+	if kv, err := json.Marshal(&KVAction{Action: REVERSE_SCAN, Data: &KVData{Key: k}}); err != nil {
 		return err
 	} else {
-		if _, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, kv); err != nil {
+		if result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, kv); err != nil {
 			return err
+		} else {
+			items := result.(map[string][]byte)
+			cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
+			for i, b := range items {
+				//Not setting a value will delete from keystore
+				if ttl, err := json.Marshal(&KVData{
+					Key: i,
+				}); err != nil {
+					return err
+				} else {
+					if _, err := kvs.nh.SyncPropose(cctx, cs, ttl); err != nil {
+						return err
+					}
+					if cached, err := json.Marshal(&KVData{
+						Key: string(b),
+					}); err != nil {
+						return err
+					} else {
+						if _, err := kvs.nh.SyncPropose(cctx, cs, cached); err != nil {
+							return err
+						}
+					}
+				}
+
+			}
 		}
 
 	}
