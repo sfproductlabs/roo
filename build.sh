@@ -13,3 +13,4 @@ sudo docker build -t roo .
 #in ~/.docker/config.json
 #test with 
 #docker run --rm -it roo
+#docker system prune -af
