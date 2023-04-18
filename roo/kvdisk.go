@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -498,8 +497,8 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 		if erru != nil || actionKV.Data.Key == "" {
 			erru = json.Unmarshal(e.Cmd, actionKV.Data)
 			if erru != nil || actionKV.Data.Key == "" {
-				log.Print("[ERROR] Can't update empty/unknown key", erru, "\n")
-				return nil, erru
+				rlog.Errorf("[ERROR] Couldn't update empty/unknown key for %s. Error: %v\n", string(e.Cmd), erru)
+				continue
 			}
 		}
 		if actionKV.Data.Val == nil {
@@ -514,7 +513,7 @@ func (d *DiskKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
 	binary.LittleEndian.PutUint64(appliedIndex, ents[len(ents)-1].Index)
 	wb.Set([]byte(appliedIndexKey), appliedIndex, db.wo)
 	if err := db.db.Apply(wb, db.syncwo); err != nil {
-		return nil, err
+		return ents, err
 	}
 	if d.lastApplied >= ents[len(ents)-1].Index {
 		panic("lastApplied not moving forward")

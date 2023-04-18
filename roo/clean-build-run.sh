@@ -1,0 +1,1 @@
+sudo rm -rf cluster-data && go build && sudo ./roo config.json

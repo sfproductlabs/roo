@@ -593,7 +593,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 		cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
 		kvdata, err := json.Marshal(action)
 		if err != nil {
-			rlog.Errorf("[PUT] Execute key: %s, error: %v", action.Data.Key, err)
+			rlog.Errorf("[ERROR] Execute PUT key: %s, error: %v", action.Data.Key, err)
 		}
 		return kvs.nh.SyncPropose(cctx, cs, kvdata)
 	}
