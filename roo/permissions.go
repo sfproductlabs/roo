@@ -35,7 +35,7 @@ const (
 
 type TypedString struct {
 	Val  string
-	Rune int32
+	Rune rune
 }
 
 type Permisson struct {
@@ -84,7 +84,7 @@ func getPermissionString(entity *TypedString, context *TypedString, action *Type
 	if delete {
 		kv.Val = nil
 	}
-	fmt.Println("PERMISSION CHECK", kv)
+	//fmt.Println("PERMISSION CHECK", kv)
 	return kv
 }
 
@@ -168,8 +168,10 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) (bool, er
 	//Maybe some instance we leave user til end (not first)
 	parts := strings.Split(request.Resource.Val, "/")
 	path := ""
-	for _, part := range parts {
-		path = "/" + part //TODO: We assume minimum of a root object
+	for idx, part := range parts {
+		if idx > 0 {
+			path = path + "/" + part //TODO: We assume minimum of a root object
+		}
 		pString := getPermissionString(
 			&request.User,
 			&TypedString{
@@ -207,7 +209,9 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) (bool, er
 					Rune: request.Resource.Rune,
 					Val:  path,
 				})
-				rlog.Infof("[GET] Permission succeeded on resource: %#U %s for user: %s passed: %s\n", request.Resource.Rune, request.Resource.Val, request.User, request.Resource.Val)
+				if kvs.AppConfig.Debug {
+					rlog.Debugf("[GET] Permission succeeded on resource: %#U %s for: %v\n", request.Resource.Rune, request.Resource.Val, request)
+				}
 				return true, nil
 			}
 		}
@@ -299,7 +303,7 @@ func (kvs *KvService) cache(ctx context.Context, request *Request, successfulEnt
 		if _, err := kvs.nh.SyncPropose(cctx, cs, kv); err != nil {
 			return err
 		}
-
+		kvs.ttl(ctx, k)
 	}
 
 	return nil

@@ -328,6 +328,50 @@ curl -X GET http://localhost:6299/roo/v1/kvs #Gets everything in the _entire_ kv
 * The resulting values are encoded in base64, so you may need to convert them (unlike the GET single query above which returns raw bytes)
 * Use ```window.atob("dGVz......dCBkYXRh")``` in javascript. Use json.Unmarshall or string([]byte) in Golang Go if you want a string... OR just use GET instead.
 
+### Setting a permission
+
+* Note : The rune is a single character (G,F,R etc.) KEEP LOWER CASE. Use 'G'.charCodeAt(0) to get int32 for javascript
+
+```sh
+curl -X PUT -i http://localhost:6299/roo/v1/perm --data '[{ 
+  "Entity" : { "Val" : "dioptre", "Rune" : 117},
+  "Context" : { "Val" : "/folder1", "Rune" : 102},  
+  "Right" : [4],
+  "Delete" : false
+},{ 
+  "Entity" : { "Val" : "marketing", "Rune" : 103},
+  "Context" : { "Val" : "/folder1/folder2", "Rune" : 102},
+  "Action" : { "Val" : "push_pr", "Rune" : 114},
+  "Delete" : false
+},{ 
+  "Entity" : { "Val" : "admins", "Rune" : 103},
+  "Context" : { "Val" : "/folder1/folder2", "Rune" : 102},
+  "Right" : [4],
+  "Delete" : false
+}]'
+```
+
+### Getting a permission
+
+```sh
+curl -X POST -i http://localhost:6299/roo/v1/perm --data '{ 
+  "User" : { "Val" : "dioptreX", "Rune" : 117},
+  "Entities" : [ { "Val" : "admins", "Rune" : 103}, { "Val" : "marketing", "Rune" : 103}],
+  "Resource" : { "Val" : "/folder1/folder2/wb1", "Rune" : 102},  
+  "Right" : [4]
+}
+'
+```
+Another using Action:
+```sh
+curl -X POST -i http://localhost:6299/roo/v1/perm --data '{ 
+  "User" : { "Val" : "dioptreX", "Rune" : 117},
+  "Entities" : [ { "Val" : "marketing", "Rune" : 103}],
+  "Resource" : { "Val" : "/folder1/folder2/wb1", "Rune" : 102},
+  "Action" : { "Val" : "push_pr", "Rune": 114 }
+}'
+```
+
 ## Help!
 
 ### FAQ

@@ -373,14 +373,12 @@ func main() {
 		}
 	}).Methods("PUT")
 
-	//////////////////////////////////////// PUT PERM
-	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm/{key}", func(w http.ResponseWriter, r *http.Request) {
+	//////////////////////////////////////// PUT PERM PERMS PERMISSIONS
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
-			params := mux.Vars(r)
 			sargs := ServiceArgs{
 				ServiceType: SERVE_PUT_PERM,
-				Values:      &params,
 			}
 			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
@@ -394,13 +392,11 @@ func main() {
 		}
 	}).Methods("PUT")
 	//////////////////////////////////////// CHECK PERM
-	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm/{key}", func(w http.ResponseWriter, r *http.Request) {
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm", func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-connc:
-			params := mux.Vars(r)
 			sargs := ServiceArgs{
 				ServiceType: SERVE_POST_PERM,
-				Values:      &params,
 			}
 			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
 			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
