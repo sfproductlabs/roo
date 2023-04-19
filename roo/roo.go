@@ -211,11 +211,14 @@ func main() {
 	/// API Must load before everything else so we can get status updates
 	//////////////////////////////////////// API ON :6299 (by default)
 	rtr := mux.NewRouter()
-	rtr.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	rtr.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	rtr.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	rtr.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	rtr.HandleFunc("/debug/pprof/{page:.*}", pprof.Index)
+	//Add profiler & debug routes
+	if configuration.Debug {
+		rtr.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		rtr.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		rtr.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		rtr.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		rtr.HandleFunc("/debug/pprof/{page:.*}", pprof.Index)
+	}
 	//////////////////////////////////////// OPTIONS ROUTE DEFAULT - EVERYTHING OK
 	rtr.HandleFunc("/roo/"+configuration.ApiVersionString, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
@@ -491,7 +494,7 @@ func main() {
 							}
 						}
 						kvs, _ := json.Marshal(&KVBatch{Batch: values})
-						//TODO: Could use Propse but saturates instead
+						//TODO: Could use Propose but saturates instead
 						if req, err := kv.nh.SyncPropose(ctx, cs, kvs); err != nil {
 							rlog.Errorf("[ERROR] Didn't save %v %v", err, req)
 						}

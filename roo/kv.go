@@ -595,6 +595,7 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 		if err != nil {
 			rlog.Errorf("[ERROR] Execute PUT key: %s, error: %v", action.Data.Key, err)
 		}
+		rlog.Errorf("%v", string(kvdata))
 		return kvs.nh.SyncPropose(cctx, cs, kvdata)
 	}
 	return nil, fmt.Errorf("Method not implemented (execute) in kv %s", action.Action)

@@ -403,7 +403,7 @@ func (d *DiskKV) Lookup(cmd interface{}) (interface{}, error) {
 	case SCAN:
 		return d.Scan(actionKV.Data.Key)
 	case REVERSE_SCAN:
-		return d.ReverseScan(actionKV.Data.Key)
+		return d.ReverseScan(actionKV.Data.Key, actionKV.Data.Val)
 	default:
 		return d.Get(actionKV.Data.Key)
 	}
@@ -445,12 +445,13 @@ func (d *DiskKV) Scan(key string) (map[string][]byte, error) {
 	}
 	return nil, errors.New("db closed")
 }
-func (d *DiskKV) ReverseScan(key string) (map[string][]byte, error) {
+
+func (d *DiskKV) ReverseScan(key string, val []byte) (map[string][]byte, error) {
 	db := (*pebbledb)(atomic.LoadPointer(&d.db))
 	values := make(map[string][]byte, 0)
 	if db != nil {
 		iter := db.db.NewIter(&pebble.IterOptions{
-			LowerBound: []byte{},
+			LowerBound: val,
 			UpperBound: []byte(key),
 		})
 		defer iter.Close()

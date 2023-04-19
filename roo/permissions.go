@@ -354,7 +354,7 @@ func (kvs *KvService) prune(ctx context.Context) error {
 		time.Now().Unix(),
 	)
 
-	if kv, err := json.Marshal(&KVAction{Action: REVERSE_SCAN, Data: &KVData{Key: k}}); err != nil {
+	if kv, err := json.Marshal(&KVAction{Action: REVERSE_SCAN, Data: &KVData{Key: k, Val: []byte("ttl:")}}); err != nil {
 		return err
 	} else {
 		if result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, kv); err != nil {
@@ -363,6 +363,7 @@ func (kvs *KvService) prune(ctx context.Context) error {
 			items := result.(map[string][]byte)
 			cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
 			for i, b := range items {
+
 				//Not setting a value will delete from keystore
 				if ttl, err := json.Marshal(&KVData{
 					Key: i,
