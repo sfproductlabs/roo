@@ -400,20 +400,6 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 			}
 		}
 		return nil
-	case SERVE_PUT_PERM:
-		if data, err := ioutil.ReadAll(r.Body); err != nil {
-			return fmt.Errorf("Could not parse body: %s", err)
-		} else {
-			perms := &[]Permisson{}
-			if err := json.Unmarshal(data, &perms); err != nil {
-				return fmt.Errorf("Could not parse object: %s", err)
-			}
-			if err := kvs.permiss(r.Context(), *perms); err != nil {
-				return fmt.Errorf("Could not set permission: %s", err)
-			}
-		}
-		(*w).WriteHeader(http.StatusOK)
-		return nil
 	case SERVE_GET_KV:
 		action := &KVAction{
 			Action: GET,
@@ -428,6 +414,31 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		(*w).WriteHeader(http.StatusOK)
 		(*w).Write(result.([]byte))
 		return nil
+	case SERVE_PUT_PERM:
+		if data, err := ioutil.ReadAll(r.Body); err != nil {
+			return fmt.Errorf("Could not parse body: %s", err)
+		} else {
+			perms := &[]Permisson{}
+			if err := json.Unmarshal(data, &perms); err != nil {
+				return fmt.Errorf("Could not parse object: %s", err)
+			}
+			if err := kvs.permiss(r.Context(), *perms); err != nil {
+				return fmt.Errorf("Could not set permission: %s", err)
+			}
+		}
+		(*w).WriteHeader(http.StatusOK)
+		return nil
+	case SERVE_DELETE_PERM:
+		user := (*s.Values)["user"]
+		if len(user) > 0 {
+			if err := kvs.revoke(r.Context(), (*s.Values)["user"]); err != nil {
+				return fmt.Errorf("Could not remove user: %s", err)
+			}
+			(*w).WriteHeader(http.StatusOK)
+			return nil
+		} else {
+			return fmt.Errorf("Could not delete empty user")
+		}
 	case SERVE_PUT_KV:
 		defer r.Body.Close()
 		data, err := ioutil.ReadAll(r.Body)

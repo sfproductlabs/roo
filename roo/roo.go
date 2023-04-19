@@ -409,6 +409,27 @@ func main() {
 			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
 		}
 	}).Methods("POST")
+	// ////////////////////////////////////// DELETE PERM
+	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/perm/{user}", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-connc:
+			params := mux.Vars(r)
+			sargs := ServiceArgs{
+				ServiceType: SERVE_DELETE_PERM,
+				Values:      &params,
+			}
+			w.Header().Set("access-control-allow-origin", configuration.AllowOrigin)
+			if err = serveWithArgs(&configuration, &w, r, &sargs); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+			}
+			connc <- struct{}{}
+		default:
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Maximum clients reached on this node.", http.StatusServiceUnavailable)
+		}
+	}).Methods("DELETE")
+
 	//////////////////////////////////////// UPDATE SWARM
 	rtr.HandleFunc("/roo/"+configuration.ApiVersionString+"/swarm", func(w http.ResponseWriter, r *http.Request) {
 		if err := serveWithArgs(&configuration, &w, r, &ServiceArgs{ServiceType: SERVE_POST_SWARM}); err != nil {

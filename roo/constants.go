@@ -50,6 +50,7 @@ const (
 	SERVE_POST_RESCUE = iota
 	SERVE_POST_PERM   = iota
 	SERVE_PUT_PERM    = iota
+	SERVE_DELETE_PERM = iota
 )
 
 var (

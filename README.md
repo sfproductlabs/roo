@@ -88,6 +88,10 @@ echo "docker stack rm roo # WARNING WILL REMOVE CLUSTER"
 * Debug Symbols - GET http://localhost:6299/debug/pprof/symbol
 * Debug Trace - GET http://localhost:6299/debug/pprof/trace
 * Debug Indices - GET http://localhost:6299/debug/pprof/1
+* Delete a permission - DELETE http://localhost:6299/roo/v1/perm/user
+* Add a permission - PUT http://localhost:6299/roo/v1/perm
+* Check a permission - POST http://localhost:6299/roo/v1/perm
+
 
 ## Getting Started With a Real Example (complete run-through example on Hetzner Cloud)
 

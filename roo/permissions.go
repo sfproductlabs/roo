@@ -394,3 +394,35 @@ func (kvs *KvService) prune(ctx context.Context) error {
 	}
 	return nil
 }
+
+// Clear out the cache for user
+func (kvs *KvService) revoke(ctx context.Context, user string) error {
+	cctx, cancel := context.WithTimeout(ctx, time.Duration(60*time.Second))
+	defer cancel()
+
+	if kv, err := json.Marshal(&KVAction{Action: SCAN, Data: &KVData{Key: fmt.Sprintf("c:%s", user)}}); err != nil {
+		return err
+	} else {
+		if result, err := kvs.nh.SyncRead(cctx, kvs.AppConfig.Cluster.ShardID, kv); err != nil {
+			return err
+		} else {
+			items := result.(map[string][]byte)
+			cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
+			for i := range items {
+				//Not setting a value will delete from keystore
+				if c, err := json.Marshal(&KVData{
+					Key: i,
+				}); err != nil {
+					return err
+				} else {
+					if _, err := kvs.nh.SyncPropose(cctx, cs, c); err != nil {
+						continue
+					}
+				}
+
+			}
+		}
+
+	}
+	return nil
+}
