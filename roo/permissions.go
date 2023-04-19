@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cockroachdb/pebble"
 )
 
 // RIGHT
@@ -425,4 +429,49 @@ func (kvs *KvService) revoke(ctx context.Context, user string) error {
 
 	}
 	return nil
+}
+
+func (kvs *KvService) testPermission() {
+	time.Sleep(time.Duration(8 * time.Second))
+	rand.Seed(time.Now().UnixNano())
+	min := 0
+	max := 999999
+	rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
+	db, _ := createDB(testDBDirName + "/_testing")
+	rlog.Infof("[STARTED INTERNAL - WRITE]")
+	for i := 0; i < 1000000; i++ {
+		db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
+	}
+	rlog.Infof("[STOPPED INTERNAL - WRITE]")
+	rlog.Infof("[STARTED INTERNAL - READ]")
+	for i := 0; i < 1000000; i++ {
+		if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
+			closer.Close()
+		}
+	}
+	rlog.Infof("[STOPPED INTERNAL - READ]")
+	rlog.Infof("[TESTING EXTERNAL API 1M READS/WRITES]")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3600*time.Second))
+	defer cancel()
+	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
+	rlog.Infof("[STARTED EXTERNAL - WRITE]")
+	values := make([]*KVData, 1000000)
+	for i := 0; i < 1000000; i++ {
+		values[i] = &KVData{
+			Key: "_test" + strconv.Itoa(i),
+			Val: []byte("_test"),
+		}
+	}
+	kv, _ := json.Marshal(&KVBatch{Batch: values})
+	//TODO: Could use Propose but saturates instead
+	if req, err := kvs.nh.SyncPropose(ctx, cs, kv); err != nil {
+		rlog.Errorf("[ERROR] Didn't save %v %v", err, req)
+	}
+	rlog.Infof("[STOPPED EXTERNAL - WRITE]")
+	rlog.Infof("[STARTED EXTERNAL - READ]")
+	for i := 0; i < 1000000; i++ {
+		//kv.nh.StaleRead(kv.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
+		kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
+	}
+	rlog.Infof("[STOPPED EXTERNAL - READ]")
 }

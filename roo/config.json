@@ -2,7 +2,7 @@
     "SchemaVersion": 1,
     "ApiVersion": 1,
     "Swarm": true,
-    "Tests" : ["perms"],
+    "Tests" : ["kv", "perms"],
     "TestsAll" : ["kv","perms"],
     "SwarmRefreshSeconds": 30,
     "CheckHostnames" : true,
@@ -23,6 +23,7 @@
     "PermissionCheckExact" : false,
     "AcmeStaging": false,
     "DataDirectoryRoot" : "",
+    "LogDB": "pebble",
     "CacheSeconds": 86400,
     "Cluster": {
         "StartDelaySeconds": 0,

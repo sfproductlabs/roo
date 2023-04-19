@@ -170,6 +170,7 @@ type Configuration struct {
 	UrlFilter                string
 	UrlFilterMatchGroup      int
 	AllowOrigin              string
+	LogDB                    string
 	IsUrlFiltered            bool
 	MaximumConnections       int
 	ReadTimeoutSeconds       int

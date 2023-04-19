@@ -66,8 +66,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cockroachdb/pebble"
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
+	"github.com/lni/dragonboat/v4/plugin/tan"
+	"github.com/lni/vfs"
 )
 
 // ////////////////////////////////////// C*
@@ -139,12 +142,21 @@ func (kvs *KvService) connect() error {
 		"roo",
 		fmt.Sprintf("node%d", kvs.AppConfig.Cluster.ReplicaID))
 
+	ec := config.ExpertConfig{
+		FS: vfs.Default, //vfs.NewMem(),
+	}
+	if kvs.AppConfig.LogDB == "tan" {
+		ec.LogDBFactory = tan.Factory
+	}
+
 	nhc := config.NodeHostConfig{
 		WALDir:         datadir,
 		NodeHostDir:    datadir,
 		RTTMillisecond: 200,
 		RaftAddress:    kvs.AppConfig.Cluster.Binding + KV_PORT,
+		Expert:         ec,
 	}
+
 	nh, err := dragonboat.NewNodeHost(nhc)
 	if err != nil {
 		panic(err)
@@ -613,4 +625,49 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 		return kvs.nh.SyncPropose(cctx, cs, kvdata)
 	}
 	return nil, fmt.Errorf("Method not implemented (execute) in kv %s", action.Action)
+}
+
+func (kvs *KvService) test() {
+	time.Sleep(time.Duration(8 * time.Second))
+	rand.Seed(time.Now().UnixNano())
+	min := 0
+	max := 999999
+	rlog.Infof("[TESTING INTERNAL API 1M READS/WRITES]")
+	db, _ := createDB(testDBDirName + "/_testing")
+	rlog.Infof("[STARTED INTERNAL - WRITE]")
+	for i := 0; i < 1000000; i++ {
+		db.db.Set([]byte("_test"+strconv.Itoa(i)), []byte("_test"), &pebble.WriteOptions{Sync: false})
+	}
+	rlog.Infof("[STOPPED INTERNAL - WRITE]")
+	rlog.Infof("[STARTED INTERNAL - READ]")
+	for i := 0; i < 1000000; i++ {
+		if _, closer, _ := db.db.Get([]byte("_test" + strconv.Itoa(rand.Intn(max-min+1)+min))); closer != nil {
+			closer.Close()
+		}
+	}
+	rlog.Infof("[STOPPED INTERNAL - READ]")
+	rlog.Infof("[TESTING EXTERNAL API 1M READS/WRITES]")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3600*time.Second))
+	defer cancel()
+	cs := kvs.nh.GetNoOPSession(kvs.AppConfig.Cluster.ShardID)
+	rlog.Infof("[STARTED EXTERNAL - WRITE]")
+	values := make([]*KVData, 1000000)
+	for i := 0; i < 1000000; i++ {
+		values[i] = &KVData{
+			Key: "_test" + strconv.Itoa(i),
+			Val: []byte("_test"),
+		}
+	}
+	kv, _ := json.Marshal(&KVBatch{Batch: values})
+	//TODO: Could use Propose but saturates instead
+	if req, err := kvs.nh.SyncPropose(ctx, cs, kv); err != nil {
+		rlog.Errorf("[ERROR] Didn't save %v %v", err, req)
+	}
+	rlog.Infof("[STOPPED EXTERNAL - WRITE]")
+	rlog.Infof("[STARTED EXTERNAL - READ]")
+	for i := 0; i < 1000000; i++ {
+		//kv.nh.StaleRead(kv.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
+		kvs.nh.SyncRead(ctx, kvs.AppConfig.Cluster.ShardID, "_test"+strconv.Itoa(rand.Intn(max-min+1)+min))
+	}
+	rlog.Infof("[STOPPED EXTERNAL - READ]")
 }
