@@ -574,7 +574,9 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
 		} else {
-			rlog.Infof("[SCAN] Execute query key: %v\n", action.Data.Key)
+			if kvs.AppConfig.Debug {
+				rlog.Infof("[SCAN] Execute query key: %v\n", action.Data.Key)
+			}
 			return result, nil
 		}
 	case GET:
@@ -583,7 +585,9 @@ func (kvs *KvService) execute(ctx context.Context, action *KVAction) (interface{
 			rlog.Errorf("SyncRead returned error %v\n", err)
 			return nil, err
 		} else {
-			rlog.Infof("[GET] Execute query key: %s\n", action.Data.Key)
+			if kvs.AppConfig.Debug {
+				rlog.Infof("[GET] Execute query key: %s\n", action.Data.Key)
+			}
 			return result, nil
 		}
 	case PUT:
