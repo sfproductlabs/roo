@@ -429,7 +429,7 @@ func (kvs *KvService) serve(w *http.ResponseWriter, r *http.Request, s *ServiceA
 		if data, err := ioutil.ReadAll(r.Body); err != nil {
 			return fmt.Errorf("Could not parse body: %s", err)
 		} else {
-			perms := &[]Permisson{}
+			perms := &[]Permission{}
 			if err := json.Unmarshal(data, &perms); err != nil {
 				return fmt.Errorf("Could not parse object: %s", err)
 			}

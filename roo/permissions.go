@@ -38,7 +38,7 @@ type TypedString struct {
 	Rune rune
 }
 
-type Permisson struct {
+type Permission struct {
 	Entity  TypedString //entity is a union of group & user
 	Context TypedString //context for permissioned user, ex. f:/org/folder1
 	Action  TypedString //an action not covered in the rights above
@@ -66,10 +66,14 @@ type Request struct {
 // KEY: p:{e}:sourcetable_users:{c}:/org/folder1:{a}:push_prs, VALUE: 1 (RESERVED - IS ACTION SPECIAL TYPE)
 func getPermissionString(entity *TypedString, context *TypedString, action *TypedString, right *[]byte, delete bool) *KVData {
 	var v []byte
+	c := context.Val
+	if len(c) == 0 {
+		c = "/"
+	}
 	k := fmt.Sprintf("p:e:%s:%c:%s",
 		entity.Val,
 		context.Rune,
-		context.Val,
+		c,
 	)
 	if len(action.Val) > 0 {
 		k = k + fmt.Sprintf(":%c:%s", action.Rune, action.Val)
@@ -106,7 +110,7 @@ func (kvs *KvService) checkPermission(ctx context.Context, kv *KVData) bool {
 			return true
 		} else {
 			//Check every byte
-			if kvs.AppConfig.PermissonCheckExact {
+			if kvs.AppConfig.PermissionCheckExact {
 				return bitwiseAnd(bytes, kv.Val)
 			} else {
 				return bitwiseGreaterOrEqual(kv.Val, bytes)
@@ -122,7 +126,10 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) (bool, er
 
 	//First try the cache
 	//Returns {entity_type_char}:{entity}:{context_type_char}:{context}
-	c := kvs.hit(ctx, request)
+	var c string
+	if kvs.AppConfig.CacheSeconds > 0 {
+		c = kvs.hit(ctx, request)
+	}
 	if len(c) > 0 {
 		//URGENT: First check we are still the/member of entity
 		found := false
@@ -166,8 +173,14 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) (bool, er
 	//TODO - much more rigorous testing is needed
 	//Perhaps org name is a priority (maybe match chars to path,entity and resource first)
 	//Maybe some instance we leave user til end (not first)
-	parts := strings.Split(request.Resource.Val, "/")
-	path := ""
+	var parts []string
+	var path string
+	if kvs.AppConfig.AuthorizeSubpaths {
+		parts = strings.Split(request.Resource.Val, "/")
+	} else {
+		path = request.Resource.Val
+		parts = []string{path}
+	}
 	for idx, part := range parts {
 		if idx > 0 {
 			path = path + "/" + part //TODO: We assume minimum of a root object
@@ -225,7 +238,7 @@ func (kvs *KvService) authorize(ctx context.Context, request *Request) (bool, er
 // KEY: p:{e}:sourcetable_users:{c}:/org/folder1 VALUE: 00000000101010101010 (ex. edit, comment)
 // KEY: p:{e}:sourcetable_users:{c}:/org/folder1:{a}:push_prs, VALUE: 1 (RESERVED - IS ACTION SPECIAL TYPE)
 // NOTE: DO NOT USE NAMES IN CASE THEY ARE RENAMED, USE IDS
-func (kvs *KvService) permiss(ctx context.Context, permissions []Permisson) error {
+func (kvs *KvService) permiss(ctx context.Context, permissions []Permission) error {
 	cctx, cancel := context.WithTimeout(ctx, time.Duration(12*time.Second))
 	defer cancel()
 	values := make([]*KVData, len(permissions))

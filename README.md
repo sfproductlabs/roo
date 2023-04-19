@@ -355,7 +355,7 @@ curl -X PUT -i http://localhost:6299/roo/v1/perm --data '[{
 }]'
 ```
 
-### Getting a permission
+### Permission Request
 
 ```sh
 curl -X POST -i http://localhost:6299/roo/v1/perm --data '{ 

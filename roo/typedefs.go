@@ -144,6 +144,7 @@ type Configuration struct {
 	ApiVersion               int
 	ApiVersionString         string
 	DataDirectoryRoot        string
+	AuthorizeSubpaths        bool
 	AcmeStaging              bool
 	Tests                    []string
 	TestMutex                sync.Mutex
@@ -160,7 +161,7 @@ type Configuration struct {
 	IgnoreInsecureTLS        bool
 	ProxyUrlFilter           string
 	IgnoreProxyOptions       bool
-	PermissonCheckExact      bool
+	PermissionCheckExact     bool
 	ProxyForceJson           bool
 	ProxyDailyLimit          uint64
 	ProxyDailyLimitChecker   string //Service, Ex. casssandra
