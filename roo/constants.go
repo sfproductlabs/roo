@@ -54,7 +54,8 @@ const (
 )
 
 var (
-	rlog = logger.GetLogger("roo")
+	rlog    = logger.GetLogger("roo")
+	testLog = logger.GetLogger("tests")
 )
 
 const (

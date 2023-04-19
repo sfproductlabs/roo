@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httputil"
+	"sync"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -145,6 +146,7 @@ type Configuration struct {
 	DataDirectoryRoot        string
 	AcmeStaging              bool
 	Tests                    []string
+	TestMutex                sync.Mutex
 	Swarm                    bool
 	SwarmRefreshSeconds      int
 	SwarmRole                string

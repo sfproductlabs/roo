@@ -121,6 +121,9 @@ func main() {
 	if configuration.Debug || len(configuration.Tests) > 0 {
 		logger.GetLogger("roo").SetLevel(logger.DEBUG)
 	}
+	if len(configuration.Tests) > 0 {
+		logger.GetLogger("tests").SetLevel(logger.DEBUG)
+	}
 
 	////////////////////////////////////////SECURITY OVERRIDES
 	http.DefaultServeMux = http.NewServeMux() //This prevents profiling info available on public routes
@@ -476,11 +479,15 @@ func main() {
 
 			} else {
 				rlog.Infof("Cluster: Connected to RAFT: %s\n", s.Service.Hosts)
-				if Contains(configuration.Tests, "kv") {
-					go func() {
-						kv.test()
-					}()
-				}
+				go func() {
+					time.Sleep(time.Duration(8 * time.Second))
+					if Contains(configuration.Tests, "kv") {
+						configuration.testKV(&kv)
+					}
+					if Contains(configuration.Tests, "perms") {
+						configuration.testPermissions(&kv)
+					}
+				}()
 			}
 			//SET THE DEFAULT API TO RUN THROUGH THE KV
 			configuration.API = s.Service
